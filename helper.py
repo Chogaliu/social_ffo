@@ -69,7 +69,7 @@ def get_guiding_dir(po_graph, node, sign, args, guiding_i_dir):
         np.array([po_graph.nodes[node].x - po_graph.nodes[sign].x, po_graph.nodes[node].y - po_graph.nodes[sign].y]))
     direction_x = intensity_cal(k=args.k, q=args.sign_q, r=r) * guiding_i_dir[0]
     direction_y = intensity_cal(k=args.k, q=args.sign_q, r=r) * guiding_i_dir[1]
-    direction = np.array([direction_x,direction_y])
+    direction = np.array([direction_x, direction_y])
     return direction
 
 
@@ -82,39 +82,9 @@ def get_poten_signs(sign_loc, value=1):
     return [k for k, v in sign_loc.items() if v == value]
 
 
-def optimize_lp_1(filename):
-    """
-    solve the .lp file
-    return: sign_loc_info (settlement of possible signage locations)
-    sign_loc_info x{}=0/1:
-    """
-    model = read(filename)
-    model.optimize()
-    print("Objective:", model.objVal)
-    sign_loc_info = {}
-    for i in model.getVars():
-        # if 'x' in i.varname:
-        print("Parameter:", i.varname, "=", i.x)
-        index = int(i.varname[1:])
-        sign_loc_info[index] = i.x
-    return sign_loc_info
-
-
-def optimize_lp_2(filename):
-    """
-    solve the .lp file
-    return: sign_info - activated
-    sign_info s{}{}=0/1:
-    """
-    model = read(filename)
-    model.optimize()
-    print("Objective:", model.objVal)
-    sign_activate = {}
-    for i in model.getVars():
-        if 's' in i.varname:
-            print("Parameter:", i.varname, "=", i.x)
-            sign_activate[i.varname] = i.x
-    return sign_activate
+def get_utility(angle, e):
+    u = (-0.6 * e + 1) * (-5 * angle + 15) + 4 * e
+    return u
 
 
 def find_the_fittest_exit(po_graph):
@@ -170,3 +140,38 @@ def is_intersected(A, B, C, D):
 
     return (vector_product(AC, AD) * vector_product(BC, BD) <= 1e-9) \
            and (vector_product(CA, CB) * vector_product(DA, DB) <= 1e-9)
+
+
+def optimize_lp_1(filename):
+    """
+    solve the .lp file
+    return: sign_loc_info (settlement of possible signage locations)
+    sign_loc_info x{}=0/1:
+    """
+    model = read(filename)
+    model.optimize()
+    print("Objective:", model.objVal)
+    sign_loc_info = {}
+    for i in model.getVars():
+        # if 'x' in i.varname:
+        print("Parameter:", i.varname, "=", i.x)
+        index = int(i.varname[1:])
+        sign_loc_info[index] = i.x
+    return sign_loc_info
+
+
+def optimize_lp_2(filename):
+    """
+    solve the .lp file
+    return: sign_info - activated
+    sign_info s{}{}=0/1:
+    """
+    model = read(filename)
+    model.optimize()
+    print("Objective:", model.objVal)
+    sign_activate = {}
+    for i in model.getVars():
+        if 's' in i.varname:
+            print("Parameter:", i.varname, "=", i.x)
+            sign_activate[i.varname] = i.x
+    return sign_activate

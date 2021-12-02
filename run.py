@@ -213,16 +213,10 @@ def write_lp_2(file, po_graph, args):
     m.update()
 
     # objective
-    m.setObjective(sum(variables['u{}{}'.format(node, sign)] for node in range(num_node) for sign in poten_signs), GRB.MAXIMIZE)
+    m.setObjective(sum(variables['u{}{}'.format(node, sign)] for node in range(num_node) for sign in poten_signs),
+                   GRB.MAXIMIZE)
 
     # constraints
-    # constraint 1 -- general - limit the direction choices & only the potential position of
-    # signage generated from step 1 can be considered:
-    for sign in poten_signs:
-        m.addConstr(sum(variables['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right']) <= 1,
-                    'sign{}'.format(sign))
-        # - po_graph.sign_loc_info[sign] <= 0, 'sign{}'.format(sign))
-
     fittest_exit = find_the_fittest_exit(po_graph)
     for node in range(num_node):
         exit_loc = np.array(po_graph.exit_info[fittest_exit[node]][1:3])
@@ -233,22 +227,29 @@ def write_lp_2(file, po_graph, args):
 
         for sign in poten_signs:
             if po_graph.dist_matrix_ns[node, sign] == 0:
+                variables['u{}{}'.format(node, sign)] = 0
                 continue
             sign_activate = sum(variables['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right'])
             guiding_i_dir = get_guiding_i_dir(variables, sign)
             guiding_dir = get_guiding_dir(po_graph, node, sign, args, guiding_i_dir)
-            # constraint 2 -- direction requirement - to promise the correctness of the guiding direction
+            # constraint 1 -- direction requirement - to promise the correctness of the guiding direction
             # Problem: default the angle between exiting direction and guiding direction must be acute ?
             m.addConstr(sum(exiting_i_dir * guiding_i_dir) >= 0, 'efficiency{}'.format(node))
             # * sign_activate
 
             angle_matter = sum(current_i_dir * guiding_i_dir)  # [-1,1]
             e_matter = po_graph.nodes[node].e  # [?]
-            variables['u{}{}'.format(node, sign)] = sign_activate * (
-                        (-0.6 * e_matter + 1) * (-5 * angle_matter + 15) + 4 * e_matter)
+            variables['u{}{}'.format(node, sign)] = get_utility(angle_matter, e_matter)
 
-        # constraint 3 -- utility requirement -
-        m.addConstr(sum(variables['u{}{}'.format(node, sign)] for sign in poten_signs) > 0, 'u_node{}'.format(node))
+    # constraint 2 -- general - limit the direction choices & only the potential position of
+    # signage generated from step 1 can be considered:
+    for sign in poten_signs:
+        sign_activate = sum(variables['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right'])
+        m.addConstr(sign_activate <= 1, 'sign{}'.format(sign))
+        # constraint 3 -- utility requirement - promise each sign has positive influence
+        # Problem: + 1 : archived value
+        m.addConstr(sign_activate * sum(variables['u{}{}'.format(node, sign)] for node in range(num_node)) + 1 > 0,
+                    'u_node{}'.format(sign))
 
         # # constraint 2 -- general - absolute promise of the variation of E:
         # var_x, var_y = cal_var(variables, node, current_i_dir, guiding_dir)
