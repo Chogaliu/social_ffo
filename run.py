@@ -255,7 +255,7 @@ def write_lp_2(file, po_graph, args):
             m.addConstr(variables['u{}_{}'.format(node, sign)] <= get_utility(angle_matter_u, e_matter_u) * sign_activate,
                         'u_up_limit{}{}'.format(node, sign))
             m.addConstr(variables['u{}_{}'.format(node, sign)] >= get_utility(angle_matter_u, e_matter_u) * sign_activate,
-                        'u_up_limit{}{}'.format(node, sign))
+                        'u_low_limit{}{}'.format(node, sign))
 
     for sign in poten_signs:
         sign_activate = sum(variables['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right'])
