@@ -66,6 +66,7 @@ def main():
 
 def initialize(args, sign_loc, activate=False):
     # consider random generation of environment
+    # sign_loc is used to decide whether load the existed sign_loc_info file or not
     # random.seed(0)
     obs_info = [(0, 10.5, 6, 1, 12, args.obs_q),
                 (1, 25.5, 6, 1, 12, args.obs_q),
@@ -199,6 +200,22 @@ def write_lp_2(file, po_graph, args):
     # variables
     num_node = len(po_graph.nodes)
     poten_signs = get_poten_signs(po_graph.sign_loc_info)
+
+    # extract the info about relationship between sign and node
+    influ_signs_for_n = {}
+    for node in range(num_node):
+        influ_signs_for_n[node] = []
+    influ_nodes_for_s = {}
+    for sign in poten_signs:
+        influ_nodes_for_s[sign] = []
+    u_name = []
+    for node in range(num_node):
+        for sign in poten_signs:
+            if po_graph.dist_matrix_ns[node, sign] == 1:
+                influ_signs_for_n[node].append(sign)
+                influ_nodes_for_s[sign].append(node)
+                u_name.append('u{}_{}'.format(node, sign))
+
     variables = {}
     x_name = ['s{}{}'.format(i, j) for i in poten_signs for j in ['up', 'down', 'left', 'right']]
     for xi in x_name:
@@ -206,15 +223,13 @@ def write_lp_2(file, po_graph, args):
     # b_name = ['b{}{}'.format(i, j) for i in range(num_node) for j in ['x', 'y']]  # adjust negative/positive
     # for bi in b_name:
     #     variables[bi] = m.addVar(vtype=GRB.BINARY, name=bi)
-    u_name = ['u{}{}'.format(i, j) for i in range(num_node) for j in poten_signs]
     for ui in u_name:
         variables[ui] = m.addVar(lb=-float('inf'), vtype=GRB.CONTINUOUS, name=ui)
     # after create the variables we need to update in order to apply them in constraints
     m.update()
 
     # objective
-    m.setObjective(sum(variables['u{}{}'.format(node, sign)] for node in range(num_node) for sign in poten_signs),
-                   GRB.MAXIMIZE)
+    m.setObjective(sum(variables[ui] for ui in u_name), GRB.MAXIMIZE)
 
     # constraints
     fittest_exit = find_the_fittest_exit(po_graph)
@@ -225,30 +240,32 @@ def write_lp_2(file, po_graph, args):
         # Problem: exiting_i_dir according to path planning
         exiting_i_dir = (exit_loc - node_loc) / np.linalg.norm(exit_loc - node_loc)
 
-        for sign in poten_signs:
-            if po_graph.dist_matrix_ns[node, sign] == 0:
-                variables['u{}{}'.format(node, sign)] = 0
-                continue
+        for sign in influ_signs_for_n[node]:
             sign_activate = sum(variables['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right'])
             guiding_i_dir = get_guiding_i_dir(variables, sign)
             guiding_dir = get_guiding_dir(po_graph, node, sign, args, guiding_i_dir)
+            angle_matter_u = sum(current_i_dir * guiding_i_dir)  # [-1,1]
+            e_matter_u = po_graph.nodes[node].e  # [?]
+
             # constraint 1 -- direction requirement - to promise the correctness of the guiding direction
             # Problem: default the angle between exiting direction and guiding direction must be acute ?
-            m.addConstr(sum(exiting_i_dir * guiding_i_dir) >= 0, 'efficiency{}'.format(node))
-            # * sign_activate
+            m.addConstr(sum(exiting_i_dir * guiding_i_dir) * sign_activate >= 0, 'efficiency{}{}'.format(node, sign))
 
-            angle_matter = sum(current_i_dir * guiding_i_dir)  # [-1,1]
-            e_matter = po_graph.nodes[node].e  # [?]
-            variables['u{}{}'.format(node, sign)] = get_utility(angle_matter, e_matter)
+            # constraint 4 -- for utility calculation
+            m.addConstr(variables['u{}_{}'.format(node, sign)] <= get_utility(angle_matter_u, e_matter_u) * sign_activate,
+                        'u_up_limit{}{}'.format(node, sign))
+            m.addConstr(variables['u{}_{}'.format(node, sign)] >= get_utility(angle_matter_u, e_matter_u) * sign_activate,
+                        'u_up_limit{}{}'.format(node, sign))
 
-    # constraint 2 -- general - limit the direction choices & only the potential position of
-    # signage generated from step 1 can be considered:
     for sign in poten_signs:
         sign_activate = sum(variables['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right'])
+
+        # constraint 2 -- general - limit the direction choices
         m.addConstr(sign_activate <= 1, 'sign{}'.format(sign))
-        # constraint 3 -- utility requirement - promise each sign has positive influence
-        # Problem: + 1 : archived value
-        m.addConstr(sign_activate * sum(variables['u{}{}'.format(node, sign)] for node in range(num_node)) + 1 > 0,
+
+        # constraint 3 -- utility requirement - promise each sign excess minimum positive influence
+        # Problem: + 1 : low-bound of the sign utility
+        m.addConstr(sum(variables['u{}_{}'.format(node, sign)] for node in influ_nodes_for_s[sign]) + 1 >= 0,
                     'u_node{}'.format(sign))
 
         # # constraint 2 -- general - absolute promise of the variation of E:

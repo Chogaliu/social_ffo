@@ -288,7 +288,7 @@ class PO_GRAPH:
                 plt.annotate(
                     "",
                     xytext=(x, y),
-                    xy=(x + dir_sign[0], y + dir_sign[1]),
+                    xy=(x + dir_sign[0]*5, y + dir_sign[1]*5),
                     arrowprops=dict(arrowstyle='->', color='red', lw=1),
                     size=10,
                 )

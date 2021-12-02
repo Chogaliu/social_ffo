@@ -171,7 +171,7 @@ def optimize_lp_2(filename):
     print("Objective:", model.objVal)
     sign_activate = {}
     for i in model.getVars():
+        print("Parameter:", i.varname, "=", i.x)
         if 's' in i.varname:
-            print("Parameter:", i.varname, "=", i.x)
             sign_activate[i.varname] = i.x
     return sign_activate
