@@ -1,6 +1,6 @@
 """
 Operating script for the Social Force-Field-Optimization model
-and output the optimization model (.lp)
+and output the optimization model (.lp) and solve it
 
 Author: Qiujia Liu
 Data: 20th August 2021
