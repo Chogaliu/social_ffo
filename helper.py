@@ -175,3 +175,21 @@ def optimize_lp_2(filename):
         if 's' in i.varname:
             sign_activate[i.varname] = i.x
     return sign_activate
+
+
+def optimize_lp_3(filename):
+    """
+    solve the .lp file
+    return: exiting_dir (unit)
+    dirs d{}=[x,y]:
+    """
+    model = read(filename)
+    model.optimize()
+    print("Objective:", model.objVal)
+    sign_loc_info = {}
+    for i in model.getVars():
+        # if 'x' in i.varname:
+        print("Parameter:", i.varname, "=", i.x)
+        index = int(i.varname[1:])
+        sign_loc_info[index] = i.x
+    return sign_loc_info

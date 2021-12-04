@@ -223,7 +223,7 @@ class PO_GRAPH:
         """
         Print function for the graph
         For debugging proposes (visualize)
-        sign_state: if the sign influence has been given
+        field_show: if the field is shown on map
         """
         fig, ax = plt.subplots()
         num_node = len(self.nodes)

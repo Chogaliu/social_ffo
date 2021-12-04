@@ -38,20 +38,25 @@ def main():
                         help='the perception range of pedestrian')
     parser.add_argument('--filename_1', type=str, default="tests/test-1.lp")
     parser.add_argument('--filename_2', type=str, default="tests/test-2.lp")
+    parser.add_argument('--filename_3', type=str, default="tests/test-3.lp")
     parser.add_argument('--filename_1_result', type=str, default="tests/result-1.npy")
     parser.add_argument('--filename_1_result_2', type=str, default="tests/result-1-2.npy")
     parser.add_argument('--filename_2_result', type=str, default="tests/result-2.npy")
+    parser.add_argument('--filename_3_result', type=str, default="tests/result-3.npy")
     args = parser.parse_args()
 
-    # po_graph initialize: load the information of ped, obs, exit, danger (sign_loc_info)
-    # initialize for Step 1 sign_loc = False; for Step 2 sign_loc = True
-
     # First step: generate the possible locations of signage
+    # generate theexiting_dir
     po_graph = initialize(args, sign_loc=False)
-    po_graph.printGraph(field_show=False)
-    # write_lp_1(args.filename_1, po_graph, args)
-    # sign_loc_info = optimize_lp_1(args.filename_1)
-    # np.save(args.filename_1_result, sign_loc_info)
+    write_lp_1(args.filename_1, po_graph, args)
+    sign_loc_info = optimize_lp_1(args.filename_1)
+    np.save(args.filename_1_result, sign_loc_info)
+    write_lp_3(args.filename_3, po_graph, args)
+    dirs = optimize_lp_3(args.filename_3)
+    np.save(args.filename_3_result, dirs)
+
+    # First step:
+    po_graph = initialize(args, sign_loc=False)
 
     # # Second step: activate the necessary signage
     # po_graph = initialize(args, sign_loc=True)
@@ -64,11 +69,9 @@ def main():
     # # po_graph.read_SigntoField(args.k, args.sign_q)
     # # po_graph.printGraph()
 
-
 def initialize(args, sign_loc, activate=False):
-    # consider random generation of environment
-    # sign_loc is used to decide whether load the existed sign_loc_info file or not
-    # random.seed(0)
+    # po_graph initialize: load the information and influence of ped, obs, exit, danger, (sign_loc_info)
+    # initialize for Step 1 sign_loc = False; for Step 2 sign_loc = True
     obs_info = [(0, 10.5, 6, 1, 12, args.obs_q),
                 (1, 25.5, 6, 1, 12, args.obs_q),
                 (2, 11.5, 12.5, 3, 1, args.obs_q),
@@ -114,7 +117,6 @@ def initialize(args, sign_loc, activate=False):
             sign_activate = np.load(args.filename_2_result, allow_pickle=True).item()
             po_graph.sign_activate = sign_activate
     return po_graph
-
 
 def write_lp_1(file, po_graph, args):
     """
@@ -190,11 +192,11 @@ def write_lp_1(file, po_graph, args):
     m.write(filename=file)
     np.save(args.filename_1_result_2, dist_matrix_ns)
 
-
 def write_lp_2(file, po_graph, args):
     """
     generate the optimization model with po_graph and save it as 'file'
     return: the .lp file
+    Problem: no consideration of exit selection & herding
     """
     m = Model("B")
 
@@ -253,10 +255,12 @@ def write_lp_2(file, po_graph, args):
             m.addConstr(sum(exiting_i_dir * guiding_i_dir) * sign_activate >= 0, 'efficiency{}{}'.format(node, sign))
 
             # constraint 4 -- for utility calculation
-            m.addConstr(variables['u{}_{}'.format(node, sign)] <= get_utility(angle_matter_u, e_matter_u) * sign_activate,
-                        'u_up_limit{}{}'.format(node, sign))
-            m.addConstr(variables['u{}_{}'.format(node, sign)] >= get_utility(angle_matter_u, e_matter_u) * sign_activate,
-                        'u_low_limit{}{}'.format(node, sign))
+            m.addConstr(
+                variables['u{}_{}'.format(node, sign)] <= get_utility(angle_matter_u, e_matter_u) * sign_activate,
+                'u_up_limit{}{}'.format(node, sign))
+            m.addConstr(
+                variables['u{}_{}'.format(node, sign)] >= get_utility(angle_matter_u, e_matter_u) * sign_activate,
+                'u_low_limit{}{}'.format(node, sign))
 
     for sign in poten_signs:
         sign_activate = sum(variables['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right'])
@@ -283,6 +287,7 @@ def write_lp_2(file, po_graph, args):
     # write in
     m.write(filename=file)
 
+def write_lp_3(file, po_graph, args):
 
 if __name__ == '__main__':
     main()
