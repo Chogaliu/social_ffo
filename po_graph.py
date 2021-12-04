@@ -107,6 +107,7 @@ class PO_GRAPH:
         return:
         # problem:
         assume there is no eyesight limitation which is unrealized
+        # congestion avoidance + herding influence
         """
         self.ped_info = np.array(ped_info)
         for node in range(len(self.nodes)):
@@ -218,7 +219,7 @@ class PO_GRAPH:
             if list(temp_inten) != [0., 0.]:
                 self.nodes[node].addInten(temp_inten)
 
-    def printGraph(self):
+    def printGraph(self, field_show=True):
         """
         Print function for the graph
         For debugging proposes (visualize)
@@ -243,69 +244,70 @@ class PO_GRAPH:
             ax.add_patch(rect)
 
         # E & signage print
-        for node in range(num_node):
-            node_print = self.nodes[node]
-            x = node_print.x
-            y = node_print.y
-            ix, iy = node_print.e_ix, node_print.e_iy
-            e = node_print.e
-            plt.annotate(
-                "",
-                xytext=(x, y),
-                xy=(x + ix, y + iy),
-                arrowprops=dict(arrowstyle='->', color='blue', lw=1),
-                size=10,
-            )
-            plt.scatter(x, y,
-                        s=e * 100,
-                        marker='o',
-                        facecolors='blue',
-                        edgecolors='blue',
-                        alpha=0.2)
-
-            if sign_loc_info == 0:
-                continue
-
-            if sign_loc_info[node] == 1.0:
-                plt.scatter(x, y, c='black', alpha=1.0)
-            else:
-                continue
-
-            if sign_activate == 0:
-                continue
-            dir_sign = [0, 0]
-            if sign_activate['s{}up'.format(node)] == 1:
-                dir_sign = [0, 1]
-            if sign_activate['s{}down'.format(node)] == 1:
-                dir_sign = [0, -1]
-            if sign_activate['s{}left'.format(node)] == 1:
-                dir_sign = [-1, 0]
-            if sign_activate['s{}right'.format(node)] == 1:
-                dir_sign = [1, 0]
-            # print the sign_direct on the map
-            if dir_sign != [0, 0]:
-                plt.scatter(x, y, c='red', alpha=1)
+        if field_show:
+            for node in range(num_node):
+                node_print = self.nodes[node]
+                x = node_print.x
+                y = node_print.y
+                ix, iy = node_print.e_ix, node_print.e_iy
+                e = node_print.e
                 plt.annotate(
                     "",
                     xytext=(x, y),
-                    xy=(x + dir_sign[0]*5, y + dir_sign[1]*5),
-                    arrowprops=dict(arrowstyle='->', color='red', lw=1),
+                    xy=(x + ix, y + iy),
+                    arrowprops=dict(arrowstyle='->', color='blue', lw=1),
                     size=10,
                 )
-            # # print the E condition after signage application
-            # plt.annotate(
-            #     "",
-            #     xytext=(x, y),
-            #     xy=(x + ix, y + iy),
-            #     arrowprops=dict(arrowstyle='->', color='black', lw=1),
-            #     size=10,
-            # )
-            # plt.scatter(x, y,
-            #             s=e * 100,
-            #             marker='o',
-            #             facecolors='red',
-            #             edgecolors='red',
-            #             alpha=0.2)
+                plt.scatter(x, y,
+                            s=e * 100,
+                            marker='o',
+                            facecolors='blue',
+                            edgecolors='blue',
+                            alpha=0.2)
+
+                if sign_loc_info == 0:
+                    continue
+
+                if sign_loc_info[node] == 1.0:
+                    plt.scatter(x, y, c='black', alpha=1.0)
+                else:
+                    continue
+
+                if sign_activate == 0:
+                    continue
+                dir_sign = [0, 0]
+                if sign_activate['s{}up'.format(node)] == 1:
+                    dir_sign = [0, 1]
+                if sign_activate['s{}down'.format(node)] == 1:
+                    dir_sign = [0, -1]
+                if sign_activate['s{}left'.format(node)] == 1:
+                    dir_sign = [-1, 0]
+                if sign_activate['s{}right'.format(node)] == 1:
+                    dir_sign = [1, 0]
+                # print the sign_direct on the map
+                if dir_sign != [0, 0]:
+                    plt.scatter(x, y, c='red', alpha=1)
+                    plt.annotate(
+                        "",
+                        xytext=(x, y),
+                        xy=(x + dir_sign[0]*5, y + dir_sign[1]*5),
+                        arrowprops=dict(arrowstyle='->', color='red', lw=1),
+                        size=10,
+                    )
+                # # print the E condition after signage application
+                # plt.annotate(
+                #     "",
+                #     xytext=(x, y),
+                #     xy=(x + ix, y + iy),
+                #     arrowprops=dict(arrowstyle='->', color='black', lw=1),
+                #     size=10,
+                # )
+                # plt.scatter(x, y,
+                #             s=e * 100,
+                #             marker='o',
+                #             facecolors='red',
+                #             edgecolors='red',
+                #             alpha=0.2)
         x_major_locator = MultipleLocator(1)
         y_major_locator = MultipleLocator(1)
         ax1 = plt.gca()

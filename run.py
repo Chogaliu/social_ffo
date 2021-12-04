@@ -46,22 +46,23 @@ def main():
     # po_graph initialize: load the information of ped, obs, exit, danger (sign_loc_info)
     # initialize for Step 1 sign_loc = False; for Step 2 sign_loc = True
 
-    # # First step: generate the possible locations of signage
-    # po_graph = initialize(args, sign_loc=False)
+    # First step: generate the possible locations of signage
+    po_graph = initialize(args, sign_loc=False)
+    po_graph.printGraph(field_show=False)
     # write_lp_1(args.filename_1, po_graph, args)
     # sign_loc_info = optimize_lp_1(args.filename_1)
     # np.save(args.filename_1_result, sign_loc_info)
 
-    # Second step: activate the necessary signage
-    po_graph = initialize(args, sign_loc=True)
-    write_lp_2(args.filename_2, po_graph, args)
-    sign_activate = optimize_lp_2(args.filename_2)
-    np.save(args.filename_2_result, sign_activate)
-    po_graph.sign_activate = sign_activate
-    po_graph.printGraph()
-    # update the e on the po_graph
-    # po_graph.read_SigntoField(args.k, args.sign_q)
+    # # Second step: activate the necessary signage
+    # po_graph = initialize(args, sign_loc=True)
+    # write_lp_2(args.filename_2, po_graph, args)
+    # sign_activate = optimize_lp_2(args.filename_2)
+    # np.save(args.filename_2_result, sign_activate)
+    # po_graph.sign_activate = sign_activate
     # po_graph.printGraph()
+    # # update the e on the po_graph
+    # # po_graph.read_SigntoField(args.k, args.sign_q)
+    # # po_graph.printGraph()
 
 
 def initialize(args, sign_loc, activate=False):
