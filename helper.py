@@ -181,15 +181,15 @@ def optimize_lp_3(filename):
     """
     solve the .lp file
     return: exiting_dir (unit)
-    dirs d{}=[x,y]:
+    dirs d{}=[ix,iy]:
     """
     model = read(filename)
     model.optimize()
     print("Objective:", model.objVal)
-    sign_loc_info = {}
+    dirs = {}
     for i in model.getVars():
         # if 'x' in i.varname:
         print("Parameter:", i.varname, "=", i.x)
         index = int(i.varname[1:])
-        sign_loc_info[index] = i.x
-    return sign_loc_info
+        dirs[index] = i.x
+    return dirs

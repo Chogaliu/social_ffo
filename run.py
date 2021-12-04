@@ -45,21 +45,19 @@ def main():
     parser.add_argument('--filename_3_result', type=str, default="tests/result-3.npy")
     args = parser.parse_args()
 
-    # First step: generate the possible locations of signage
-    # generate theexiting_dir
-    po_graph = initialize(args, sign_loc=False)
+    # First step:
+    po_graph = initialize(args, step1_fin=False)
+    # 1) generate the possible locations of signage
     write_lp_1(args.filename_1, po_graph, args)
     sign_loc_info = optimize_lp_1(args.filename_1)
     np.save(args.filename_1_result, sign_loc_info)
+    # 2) generate the exiting_dir
     write_lp_3(args.filename_3, po_graph, args)
     dirs = optimize_lp_3(args.filename_3)
     np.save(args.filename_3_result, dirs)
 
-    # First step:
-    po_graph = initialize(args, sign_loc=False)
-
     # # Second step: activate the necessary signage
-    # po_graph = initialize(args, sign_loc=True)
+    # po_graph = initialize(args, step1_fin=True)
     # write_lp_2(args.filename_2, po_graph, args)
     # sign_activate = optimize_lp_2(args.filename_2)
     # np.save(args.filename_2_result, sign_activate)
@@ -69,9 +67,10 @@ def main():
     # # po_graph.read_SigntoField(args.k, args.sign_q)
     # # po_graph.printGraph()
 
-def initialize(args, sign_loc, activate=False):
+
+def initialize(args, step1_fin, activate=False):
     # po_graph initialize: load the information and influence of ped, obs, exit, danger, (sign_loc_info)
-    # initialize for Step 1 sign_loc = False; for Step 2 sign_loc = True
+    # initialize for Step 1 step1_fin = False; for Step 2 step1_fin = True
     obs_info = [(0, 10.5, 6, 1, 12, args.obs_q),
                 (1, 25.5, 6, 1, 12, args.obs_q),
                 (2, 11.5, 12.5, 3, 1, args.obs_q),
@@ -108,7 +107,7 @@ def initialize(args, sign_loc, activate=False):
     po_graph.read_PedtoField(ped_info=ped_info, k=args.k)
     po_graph.read_ExittoField(exit_info=exit_info, k=args.k)
     po_graph.read_DangertoField(danger_info=danger_info, k=args.k)
-    if sign_loc:
+    if step1_fin:
         sign_loc_info = np.load(args.filename_1_result, allow_pickle=True).item()
         dist_matrix_ns = np.load(args.filename_1_result_2, allow_pickle=True)
         po_graph.sign_loc_info = sign_loc_info
@@ -117,6 +116,7 @@ def initialize(args, sign_loc, activate=False):
             sign_activate = np.load(args.filename_2_result, allow_pickle=True).item()
             po_graph.sign_activate = sign_activate
     return po_graph
+
 
 def write_lp_1(file, po_graph, args):
     """
@@ -191,6 +191,7 @@ def write_lp_1(file, po_graph, args):
     # write in
     m.write(filename=file)
     np.save(args.filename_1_result_2, dist_matrix_ns)
+
 
 def write_lp_2(file, po_graph, args):
     """
@@ -287,7 +288,81 @@ def write_lp_2(file, po_graph, args):
     # write in
     m.write(filename=file)
 
+
 def write_lp_3(file, po_graph, args):
+    """
+    generate the path of the shortest exiting given the obstacle information
+    return: the .lp file
+    """
+    m = Model("C")
+
+    # variables:
+    num_node = len(po_graph.nodes)
+    x_name = ['x{}'.format(sign) for sign in range(num_node)]  # if the sign is adopted as the potential signage 0/1
+    # b_name = ['b{}{}'.format(node, sign) for node in range(num_node) for sign in range(num_node)]
+    # 1/0 if the sign(s) can be detected by person at node [we require at least one sign can be detected]
+
+    variables = {}
+    for xi in x_name:
+        variables[xi] = m.addVar(vtype=GRB.BINARY, name=xi)
+    # for bi in b_name:
+    #     variables[bi] = m.addVar(vtype=GRB.BINARY, name=bi)
+    m.update()
+
+    # objective:
+    m.setObjective(sum((variables['x{}'.format(i)] for i in range(num_node))), GRB.MINIMIZE)
+
+    # constraints:
+    # construct the matrix to show the intersection condition between node and sign: dis_ns-ok inf-notok
+    num_node = len(po_graph.nodes)
+    obs_info = np.array(po_graph.obs_info)
+    dist_matrix_ns = np.zeros((num_node, num_node))
+    for node in tqdm(range(num_node)):
+        for sign in range(num_node):
+            if sign == node:
+                # dist_matrix_ns[node, sign] = 1e-9
+                dist_matrix_ns[node, sign] = 1
+                continue
+            node_loc = np.array([po_graph.nodes[node].x, po_graph.nodes[node].y])
+            sign_loc = np.array([po_graph.nodes[sign].x, po_graph.nodes[sign].y])
+            dis_ns = np.linalg.norm(node_loc - sign_loc)
+            if dis_ns <= args.per_dis:
+                dist_matrix_ns[node, sign] = 1
+                # for the potential signage position in perception area
+                for obs in range(len(obs_info)):
+                    obs_x, obs_y = obs_info[obs][1], obs_info[obs][2]
+                    obs_w, obs_l = obs_info[obs][3], obs_info[obs][4]
+                    # test the intersection with all the obstacle
+                    obs_point_1_x, obs_point_1_y = obs_x - obs_w / 2, obs_y
+                    obs_point_2_x, obs_point_2_y = obs_x + obs_w / 2, obs_y
+                    obs_point_3_x, obs_point_3_y = obs_x, obs_y - obs_l / 2
+                    obs_point_4_x, obs_point_4_y = obs_x, obs_y + obs_l / 2
+                    is_intersect_ns_temp = is_intersected(Point(obs_point_1_x, obs_point_1_y),
+                                                          Point(obs_point_2_x, obs_point_2_y),
+                                                          Point(node_loc[0], node_loc[1]),
+                                                          Point(sign_loc[0], sign_loc[1])) \
+                                           or is_intersected(Point(obs_point_3_x, obs_point_3_y),
+                                                             Point(obs_point_4_x, obs_point_4_y),
+                                                             Point(node_loc[0], node_loc[1]),
+                                                             Point(sign_loc[0], sign_loc[1]))
+                    if is_intersect_ns_temp:
+                        # dist_matrix_ns[node, sign] = float('inf')
+                        dist_matrix_ns[node, sign] = 0
+                        break
+
+    for node in range(num_node):
+        # for sign in range(num_node):
+        # m.addConstr(
+        #     (args.per_dis - dist_matrix_ns[node, sign]) * (2 * variables['b{}{}'.format(node, sign)] - 1) >= 0,
+        #     'c_abs{}{}'.format(node, sign))
+        m.addConstr(sum(dist_matrix_ns[node, sign]
+                        * variables['x{}'.format(sign)] for sign in range(num_node)) >= 1, 'cons_signs{}'.format(node))
+
+    # write in
+    m.write(filename=file)
+    np.save(args.filename_1_result_2, dist_matrix_ns)
+
+
 
 if __name__ == '__main__':
     main()
