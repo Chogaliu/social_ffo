@@ -47,6 +47,8 @@ class PO_GRAPH:
         self.sign_activate = 0
         self.sign_loc_info = 0
         self.dist_matrix_ns = 0
+        self.network_nodes = 0
+        self.network_links = 0
         self.grid_size = self.wid * self.len
 
         self.nodes = [PO_NODE(node % self.wid * self.gap, node // self.wid * self.gap, 0, 0)
@@ -58,7 +60,21 @@ class PO_GRAPH:
                       for node in range(self.grid_size)]
         # self.edges = [{} for i in range(self.grid_size)]
 
-    def read_ObstoField(self, obs_info, k):
+    def read_field(self, args, step1_fin, activate=False):
+        self.read_ObstoField(k=args.k)
+        self.read_PedtoField(k=args.k)
+        self.read_ExittoField(k=args.k)
+        self.read_DangertoField(k=args.k)
+        if step1_fin:
+            sign_loc_info = np.load(args.filename_1_result, allow_pickle=True).item()
+            dist_matrix_ns = np.load(args.filename_1_result_2, allow_pickle=True)
+            self.sign_loc_info = sign_loc_info
+            self.dist_matrix_ns = dist_matrix_ns
+            if activate:
+                sign_activate = np.load(args.filename_2_result, allow_pickle=True).item()
+                self.sign_activate = sign_activate
+
+    def read_ObstoField(self, k):
         """
         obs_info: lists of list of numpy array, each numpy array corresponds to an obstacle)
         [obs_id,o_x,o_y,o_w,o_l,o_q]
@@ -68,7 +84,7 @@ class PO_GRAPH:
         1.differentiable：every place
         2.non-differentiable: only the vertical place  (current)
         """
-        self.obs_info = np.array(obs_info)
+        obs_info = np.array(self.obs_info)
         dele_node = []  # used for extracting the taken-up area
         for node in range(len(self.nodes)):
             x = self.nodes[node].x
@@ -100,7 +116,7 @@ class PO_GRAPH:
             index = index - counter
             self.nodes.pop(index)
 
-    def read_PedtoField(self, ped_info, k):
+    def read_PedtoField(self, k):
         """
         ped_info: lists of list of numpy array, each numpy array corresponds to a pedestrian
         [ped_id,p_x,p_y,p_q]
@@ -109,7 +125,7 @@ class PO_GRAPH:
         assume there is no eyesight limitation which is unrealized
         # congestion avoidance + herding influence
         """
-        self.ped_info = np.array(ped_info)
+        ped_info = np.array(self.ped_info)
         for node in range(len(self.nodes)):
             x = self.nodes[node].x
             y = self.nodes[node].y
@@ -129,7 +145,7 @@ class PO_GRAPH:
             if list(temp_inten) != [0., 0.]:
                 self.nodes[node].addInten(temp_inten)
 
-    def read_ExittoField(self, exit_info, k):
+    def read_ExittoField(self, k):
         """
         exit_info:
         [exit_id, e_x, e_y, e_q]
@@ -137,7 +153,7 @@ class PO_GRAPH:
         # problem:
         no expected velocity & current velocity considered
         """
-        self.exit_info = np.array(exit_info)
+        exit_info = np.array(self.exit_info)
         for node in range(len(self.nodes)):
             x = self.nodes[node].x
             y = self.nodes[node].y
@@ -157,7 +173,7 @@ class PO_GRAPH:
             if list(temp_inten) != [0., 0.]:
                 self.nodes[node].addInten(temp_inten)
 
-    def read_DangertoField(self, danger_info, k):
+    def read_DangertoField(self, k):
         """
         danger_info:
         [danger_id, d_x, d_y, d_q]
@@ -165,7 +181,7 @@ class PO_GRAPH:
         # problem:
         no expected velocity & current velocity considered
         """
-        self.danger_info = np.array(danger_info)
+        danger_info = np.array(self.danger_info)
         for node in range(len(self.nodes)):
             x = self.nodes[node].x
             y = self.nodes[node].y
@@ -317,6 +333,32 @@ class PO_GRAPH:
         plt.axis('equal')
         plt.savefig('figure{}.png'.format(time.time()))
         # plt.show()
+
+    def printNetwork(self, net_show=True):
+        """
+        Print function for the network (used for decide the exiting direction)
+        For debugging proposes (visualize)
+        net_show: if the network is shown
+        """
+        fig, ax = plt.subplots()
+        num_node = len(self.nodes)
+        obs_info = self.obs_info
+        ped_info = self.ped_info
+        exit_info = self.exit_info
+        danger_info = self.danger_info
+
+        # environment print
+        plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
+        plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
+        for obs in range(np.shape(obs_info)[0]):
+            rect = mpathes.Rectangle(obs_info[obs][1:3] - obs_info[obs][3:5] / 2, obs_info[obs][3], obs_info[obs][4],
+                                     color='black', alpha=0.5)
+            ax.add_patch(rect)
+
+        # nodes-links print
+        if net_show:
+
+
 
 
 class PO_NODE:

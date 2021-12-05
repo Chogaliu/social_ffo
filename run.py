@@ -46,18 +46,21 @@ def main():
     args = parser.parse_args()
 
     # First step:
-    po_graph = initialize(args, step1_fin=False)
+    po_graph = initialize(args)
     # 1) generate the possible locations of signage
+    po_graph.read_field(args, step1_fin=False)
     write_lp_1(args.filename_1, po_graph, args)
     sign_loc_info = optimize_lp_1(args.filename_1)
     np.save(args.filename_1_result, sign_loc_info)
     # 2) generate the exiting_dir
+    po_graph.read_network(args)
     write_lp_3(args.filename_3, po_graph, args)
     dirs = optimize_lp_3(args.filename_3)
     np.save(args.filename_3_result, dirs)
 
     # # Second step: activate the necessary signage
-    # po_graph = initialize(args, step1_fin=True)
+    # po_graph = initialize(args)
+    # po_graph.read_field(args, step1_fin=True)
     # write_lp_2(args.filename_2, po_graph, args)
     # sign_activate = optimize_lp_2(args.filename_2)
     # np.save(args.filename_2_result, sign_activate)
@@ -68,7 +71,7 @@ def main():
     # # po_graph.printGraph()
 
 
-def initialize(args, step1_fin, activate=False):
+def initialize(args):
     # po_graph initialize: load the information and influence of ped, obs, exit, danger, (sign_loc_info)
     # initialize for Step 1 step1_fin = False; for Step 2 step1_fin = True
     obs_info = [(0, 10.5, 6, 1, 12, args.obs_q),
@@ -102,19 +105,9 @@ def initialize(args, step1_fin, activate=False):
                  (2, 25, -1, args.exit_q)]
     danger_info = [(0, -1, 20, args.danger_q)]
     po_graph = PO_GRAPH(args.wide, args.length, args.gap)
-    # haven't put wall effect inside
-    po_graph.read_ObstoField(obs_info=obs_info, k=args.k)
-    po_graph.read_PedtoField(ped_info=ped_info, k=args.k)
-    po_graph.read_ExittoField(exit_info=exit_info, k=args.k)
-    po_graph.read_DangertoField(danger_info=danger_info, k=args.k)
-    if step1_fin:
-        sign_loc_info = np.load(args.filename_1_result, allow_pickle=True).item()
-        dist_matrix_ns = np.load(args.filename_1_result_2, allow_pickle=True)
-        po_graph.sign_loc_info = sign_loc_info
-        po_graph.dist_matrix_ns = dist_matrix_ns
-        if activate:
-            sign_activate = np.load(args.filename_2_result, allow_pickle=True).item()
-            po_graph.sign_activate = sign_activate
+    po_graph.ped_info = ped_info
+    po_graph.exit_info = exit_info
+    po_graph.obs_info = obs_info
     return po_graph
 
 
@@ -298,9 +291,7 @@ def write_lp_3(file, po_graph, args):
 
     # variables:
     num_node = len(po_graph.nodes)
-    x_name = ['x{}'.format(sign) for sign in range(num_node)]  # if the sign is adopted as the potential signage 0/1
-    # b_name = ['b{}{}'.format(node, sign) for node in range(num_node) for sign in range(num_node)]
-    # 1/0 if the sign(s) can be detected by person at node [we require at least one sign can be detected]
+    x_name = ['d{}'.format(sign) for sign in range(num_node)]
 
     variables = {}
     for xi in x_name:
@@ -361,7 +352,6 @@ def write_lp_3(file, po_graph, args):
     # write in
     m.write(filename=file)
     np.save(args.filename_1_result_2, dist_matrix_ns)
-
 
 
 if __name__ == '__main__':
