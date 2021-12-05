@@ -61,7 +61,6 @@ def main():
     #     dirs[node] = optimize_lp_3(args.filename_3, po_graph)
     # np.save(args.filename_3_result, dirs)
 
-
     # # Second step: activate the necessary signage
     # po_graph = initialize(args)
     # po_graph.read_field(args, step1_fin=True)

@@ -48,8 +48,7 @@ class PO_GRAPH:
         self.sign_loc_info = 0
         self.dist_matrix_ns = 0
         self.dirs = 0
-        self.network_nodes = 0
-        self.network_links = 0
+        self.network_matrix = 0
         self.grid_size = self.wid * self.len
 
         self.nodes = [PO_NODE(node % self.wid * self.gap, node // self.wid * self.gap, 0, 0)
@@ -87,6 +86,10 @@ class PO_GRAPH:
         return: nodes-links matrix
         """
 
+        # find nodes
+
+
+        self.network_matrix = nodes_links_matrix
 
 
     def read_ObstoField(self, k):
@@ -346,12 +349,12 @@ class PO_GRAPH:
         ax1.yaxis.set_major_locator(y_major_locator)
         plt.grid(True)
         plt.axis('equal')
-        plt.savefig('figure{}.png'.format(time.time()))
+        plt.savefig('figure_field{}.png'.format(time.time()))
         # plt.show()
 
     def printNetwork(self, net_show=True):
         """
-        Print function for the network (used for decide the exiting direction)
+        Print function for the network (nodes-links matrix)
         For debugging proposes (visualize)
         net_show: if the network is shown
         """
@@ -360,8 +363,7 @@ class PO_GRAPH:
         obs_info = self.obs_info
         exit_info = self.exit_info
         danger_info = self.danger_info
-        nodes = self.network_nodes
-        links = self.network_links
+        network_matrix = self.network_matrix
 
         # environment print
         plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
@@ -371,12 +373,20 @@ class PO_GRAPH:
                                      color='black', alpha=0.5)
             ax.add_patch(rect)
 
-        # nodes-links print
+        # nodes-links print with network_matrix
         if net_show:
 
 
 
-
+        x_major_locator = MultipleLocator(1)
+        y_major_locator = MultipleLocator(1)
+        ax1 = plt.gca()
+        ax1.xaxis.set_major_locator(x_major_locator)
+        ax1.yaxis.set_major_locator(y_major_locator)
+        plt.grid(True)
+        plt.axis('equal')
+        plt.savefig('figure_network{}.png'.format(time.time()))
+        # plt.show()
 
 class PO_NODE:
 
