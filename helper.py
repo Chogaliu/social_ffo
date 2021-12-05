@@ -170,7 +170,7 @@ def get_poten_net_nodes(pooled_nodes_with_id):
     input pooled obs_nodes_with_id array [id,x,y] generated from pooling
     generate the middle point for each nodes pair
     (nodes pairs are not allowed within the same obstacle)
-    return: potential nodes for network
+    return: potential nodes for network [x,y]
     """
     size_ = np.shape(pooled_nodes_with_id)[0]
     poten_net_nodes = []
@@ -178,12 +178,12 @@ def get_poten_net_nodes(pooled_nodes_with_id):
         for j in range(i + 1, size_):
             if pooled_nodes_with_id[i][0] == pooled_nodes_with_id[j][0]:
                 continue
+            mid_point = (pooled_nodes_with_id[i][1:3] + pooled_nodes_with_id[j][1:3]) / 2
+            poten_net_nodes.append(mid_point)
+    return np.array(poten_net_nodes)
 
 
-
-
-
-def get_poten_net_links()
+# def get_poten_net_links()
 
 def optimize_lp_1(filename):
     """

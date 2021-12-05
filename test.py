@@ -23,7 +23,7 @@ nodes_1 = pooling(obs_nodes_with_id=np.array(obs_nodes), gap_min=1.414)
 nodes_2 = pooling(obs_nodes_with_id=nodes_1, gap_min=1.414)
 print(nodes_2)
 poten_nodes = get_poten_net_nodes(nodes_2)
-print(poten_nodes)
+print(np.shape(poten_nodes))
 
 
 
