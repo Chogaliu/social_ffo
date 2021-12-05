@@ -111,6 +111,7 @@ def initialize(args):
     po_graph.ped_info = ped_info
     po_graph.exit_info = exit_info
     po_graph.obs_info = obs_info
+    po_graph.danger_info = danger_info
     return po_graph
 
 

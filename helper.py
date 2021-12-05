@@ -142,6 +142,49 @@ def is_intersected(A, B, C, D):
            and (vector_product(CA, CB) * vector_product(DA, DB) <= 1e-9)
 
 
+def pooling(obs_nodes_with_id, gap_min):
+    """
+    input obs_nodes_with_id array [id,x,y]
+    monitor the close nodes and level them into one node [gap_min]
+    return: pooled nodes with minimum gap limit
+    """
+    size_ = np.shape(obs_nodes_with_id)[0]
+    dele_ = []
+    for i in range(size_ - 1):
+        for j in range(i + 1, size_):
+            dis = np.linalg.norm(obs_nodes_with_id[i][1:3] - obs_nodes_with_id[j][1:3])
+            if dis > gap_min:
+                continue
+            mid_point = (obs_nodes_with_id[i][1:3] + obs_nodes_with_id[j][1:3]) / 2
+            obs_nodes_with_id[i][1:3] = mid_point
+            obs_nodes_with_id[j][1:3] = mid_point
+            if obs_nodes_with_id[i][0] == obs_nodes_with_id[j][0]:
+                dele_.append(j)
+    print(obs_nodes_with_id)
+    print(dele_)
+    return np.delete(obs_nodes_with_id, dele_, axis=0)
+
+
+def get_poten_net_nodes(pooled_nodes_with_id):
+    """
+    input pooled obs_nodes_with_id array [id,x,y] generated from pooling
+    generate the middle point for each nodes pair
+    (nodes pairs are not allowed within the same obstacle)
+    return: potential nodes for network
+    """
+    size_ = np.shape(pooled_nodes_with_id)[0]
+    poten_net_nodes = []
+    for i in range(size_ - 1):
+        for j in range(i + 1, size_):
+            if pooled_nodes_with_id[i][0] == pooled_nodes_with_id[j][0]:
+                continue
+
+
+
+
+
+def get_poten_net_links()
+
 def optimize_lp_1(filename):
     """
     solve the .lp file

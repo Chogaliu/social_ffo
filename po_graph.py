@@ -49,6 +49,7 @@ class PO_GRAPH:
         self.dist_matrix_ns = 0
         self.dirs = 0
         self.network_matrix = 0
+        self.network_nodes = 0
         self.grid_size = self.wid * self.len
 
         self.nodes = [PO_NODE(node % self.wid * self.gap, node // self.wid * self.gap, 0, 0)
@@ -83,12 +84,32 @@ class PO_GRAPH:
     def read_net(self, args):
         """
         generate the nodes and feasible links according to obs_info
+        1.find nodes:
+        1) generate the boundary nodes
+        2) pooling nodes
+        3) connect N1 with N2 and find the middle nodes as the potential nodes (except ones within same obstacle)
+        2. nodes' feasible links
+        1) generate all links between nodes
+        2) if feasible (no intersection with obstacle)
+        3) record all the feasible links and feasible nodes
+        4) generate the nodes-links matrix with distance attribute
         return: nodes-links matrix
         """
+        obs_info = np.array(self.obs_info)
 
-        # find nodes
 
 
+
+
+
+        nodes = []
+
+
+        # find feasible links
+
+
+
+        self.network_nodes = feasible_nodes
         self.network_matrix = nodes_links_matrix
 
 
