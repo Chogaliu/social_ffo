@@ -177,19 +177,21 @@ def optimize_lp_2(filename):
     return sign_activate
 
 
-def optimize_lp_3(filename):
+def optimize_lp_3(filename, po_graph):
     """
     solve the .lp file
-    return: exiting_dir (unit)
-    dirs d{}=[ix,iy]:
+    return: exiting_dir (unit) array[ix,iy]:
     """
     model = read(filename)
     model.optimize()
     print("Objective:", model.objVal)
-    dirs = {}
-    for i in model.getVars():
-        # if 'x' in i.varname:
-        print("Parameter:", i.varname, "=", i.x)
-        index = int(i.varname[1:])
-        dirs[index] = i.x
-    return dirs
+
+    # transfer the solution (path form) into unit dir
+
+    # for i in model.getVars():
+    #     print("Parameter:", i.varname, "=", i.x)
+    #     index = int(i.varname[1:])
+    #     dirs[index] = i.x
+
+    exiting_dir = np.array([ix, iy])
+    return exiting_dir

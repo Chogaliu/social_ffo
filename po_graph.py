@@ -47,6 +47,7 @@ class PO_GRAPH:
         self.sign_activate = 0
         self.sign_loc_info = 0
         self.dist_matrix_ns = 0
+        self.dirs = 0
         self.network_nodes = 0
         self.network_links = 0
         self.grid_size = self.wid * self.len
@@ -61,6 +62,10 @@ class PO_GRAPH:
         # self.edges = [{} for i in range(self.grid_size)]
 
     def read_field(self, args, step1_fin, activate=False):
+        """
+        read the environmental factors in the form of field (including sign_loc_info or not)
+        return: the updated po_graph
+        """
         self.read_ObstoField(k=args.k)
         self.read_PedtoField(k=args.k)
         self.read_ExittoField(k=args.k)
@@ -68,11 +73,21 @@ class PO_GRAPH:
         if step1_fin:
             sign_loc_info = np.load(args.filename_1_result, allow_pickle=True).item()
             dist_matrix_ns = np.load(args.filename_1_result_2, allow_pickle=True)
+            dirs = np.load(args.filename_3_result, allow_pickle=True).item()
             self.sign_loc_info = sign_loc_info
             self.dist_matrix_ns = dist_matrix_ns
+            self.dirs = dirs
             if activate:
                 sign_activate = np.load(args.filename_2_result, allow_pickle=True).item()
                 self.sign_activate = sign_activate
+
+    def read_net(self, args):
+        """
+        generate the nodes and feasible links according to obs_info
+        return: nodes-links matrix
+        """
+
+
 
     def read_ObstoField(self, k):
         """
@@ -343,9 +358,10 @@ class PO_GRAPH:
         fig, ax = plt.subplots()
         num_node = len(self.nodes)
         obs_info = self.obs_info
-        ped_info = self.ped_info
         exit_info = self.exit_info
         danger_info = self.danger_info
+        nodes = self.network_nodes
+        links = self.network_links
 
         # environment print
         plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
@@ -357,6 +373,7 @@ class PO_GRAPH:
 
         # nodes-links print
         if net_show:
+
 
 
 
