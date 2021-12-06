@@ -61,25 +61,20 @@ class PO_GRAPH:
                       for node in range(self.grid_size)]
         # self.edges = [{} for i in range(self.grid_size)]
 
-    def read_field(self, args, step1_fin, activate=False):
+    def read_pre_results(self, args, activate=False):
         """
-        read the environmental factors in the form of field (including sign_loc_info or not)
+        read the sign_loc_info & (exiting) dirs generated from step 1 to po_graph
         return: the updated po_graph
         """
-        self.read_ObstoField(k=args.k)
-        self.read_PedtoField(k=args.k)
-        self.read_ExittoField(k=args.k)
-        self.read_DangertoField(k=args.k)
-        if step1_fin:
-            sign_loc_info = np.load(args.filename_1_result, allow_pickle=True).item()
-            dist_matrix_ns = np.load(args.filename_1_result_2, allow_pickle=True)
-            dirs = np.load(args.filename_3_result, allow_pickle=True).item()
-            self.sign_loc_info = sign_loc_info
-            self.dist_matrix_ns = dist_matrix_ns
-            self.dirs = dirs
-            if activate:
-                sign_activate = np.load(args.filename_2_result, allow_pickle=True).item()
-                self.sign_activate = sign_activate
+        sign_loc_info = np.load(args.filename_1_result, allow_pickle=True).item()
+        dist_matrix_ns = np.load(args.filename_1_result_2, allow_pickle=True)
+        dirs = np.load(args.filename_3_result, allow_pickle=True).item()
+        self.sign_loc_info = sign_loc_info
+        self.dist_matrix_ns = dist_matrix_ns
+        self.dirs = dirs
+        if activate:
+            sign_activate = np.load(args.filename_2_result, allow_pickle=True).item()
+            self.sign_activate = sign_activate
 
     def read_net(self, args):
         """
@@ -92,28 +87,30 @@ class PO_GRAPH:
         1) generate all links between nodes
         2) if feasible (no intersection with obstacle)
         3) record all the feasible links and feasible nodes
-        4) generate the nodes-links matrix with distance attribute
-        return: nodes-links matrix
+        4) generate the nodes-links matrix 0/1
+        return: nodes-links matrix n-n:0/1 & feasible_nodes [x,y]
         """
         obs_info = np.array(self.obs_info)
-
-
-
-
-
-
-        nodes = []
-
-
-        # find feasible links
-
-
-
+        obs_nodes = []  # list
+        for obs_id in obs_info[:, 0]:
+            id_o = int(obs_id)
+            x, y = obs_info[id_o][1:3]
+            w, l = obs_info[id_o][3:5]
+            obs_nodes.append((id_o, x - w / 2, y - l / 2))
+            obs_nodes.append((id_o, x + w / 2, y - l / 2))
+            obs_nodes.append((id_o, x - w / 2, y + l / 2))
+            obs_nodes.append((id_o, x + w / 2, y + l / 2))
+        # pooling(gap_min) here is used to deal with the "room" condition and close obs_boundary point
+        # point is infeasible due to the close distance to pass through
+        nodes_1 = pooling(obs_nodes_with_id=np.array(obs_nodes), gap_min=1.414)
+        nodes_2 = pooling(obs_nodes_with_id=nodes_1, gap_min=1.414)
+        poten_nodes = get_poten_net_nodes(nodes_2)
+        nodes_links_matrix, feasible_nodes = get_fea_net_links(obs_info, poten_nodes)
         self.network_nodes = feasible_nodes
         self.network_matrix = nodes_links_matrix
 
 
-    def read_ObstoField(self, k):
+    def read_ObstoField(self, obs, k):
         """
         obs_info: lists of list of numpy array, each numpy array corresponds to an obstacle)
         [obs_id,o_x,o_y,o_w,o_l,o_q]
@@ -123,6 +120,7 @@ class PO_GRAPH:
         1.differentiable：every place
         2.non-differentiable: only the vertical place  (current)
         """
+        self.obs_info = obs
         obs_info = np.array(self.obs_info)
         dele_node = []  # used for extracting the taken-up area
         for node in range(len(self.nodes)):
@@ -155,7 +153,7 @@ class PO_GRAPH:
             index = index - counter
             self.nodes.pop(index)
 
-    def read_PedtoField(self, k):
+    def read_PedtoField(self, ped, k):
         """
         ped_info: lists of list of numpy array, each numpy array corresponds to a pedestrian
         [ped_id,p_x,p_y,p_q]
@@ -164,6 +162,7 @@ class PO_GRAPH:
         assume there is no eyesight limitation which is unrealized
         # congestion avoidance + herding influence
         """
+        self.ped_info = ped
         ped_info = np.array(self.ped_info)
         for node in range(len(self.nodes)):
             x = self.nodes[node].x
@@ -184,7 +183,7 @@ class PO_GRAPH:
             if list(temp_inten) != [0., 0.]:
                 self.nodes[node].addInten(temp_inten)
 
-    def read_ExittoField(self, k):
+    def read_ExittoField(self, exit, k):
         """
         exit_info:
         [exit_id, e_x, e_y, e_q]
@@ -192,6 +191,7 @@ class PO_GRAPH:
         # problem:
         no expected velocity & current velocity considered
         """
+        self.exit_info = exit
         exit_info = np.array(self.exit_info)
         for node in range(len(self.nodes)):
             x = self.nodes[node].x
@@ -212,7 +212,7 @@ class PO_GRAPH:
             if list(temp_inten) != [0., 0.]:
                 self.nodes[node].addInten(temp_inten)
 
-    def read_DangertoField(self, k):
+    def read_DangertoField(self, danger, k):
         """
         danger_info:
         [danger_id, d_x, d_y, d_q]
@@ -220,6 +220,7 @@ class PO_GRAPH:
         # problem:
         no expected velocity & current velocity considered
         """
+        self.danger_info = danger
         danger_info = np.array(self.danger_info)
         for node in range(len(self.nodes)):
             x = self.nodes[node].x

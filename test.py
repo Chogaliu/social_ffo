@@ -21,9 +21,9 @@ for obs_id in obs_info[:, 0]:
     obs_nodes.append((id_o, x + w / 2, y + l / 2))
 nodes_1 = pooling(obs_nodes_with_id=np.array(obs_nodes), gap_min=1.414)
 nodes_2 = pooling(obs_nodes_with_id=nodes_1, gap_min=1.414)
-print(nodes_2)
 poten_nodes = get_poten_net_nodes(nodes_2)
-print(np.shape(poten_nodes))
+nodes_links_matrix, feasible_nodes = get_fea_net_links(obs_info,poten_nodes)
+
 
 
 

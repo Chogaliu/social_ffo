@@ -46,13 +46,16 @@ def main():
     args = parser.parse_args()
 
     # First step:
+    # (1) generate the possible locations of signage
+    # (2): generate the exiting_dir
     po_graph = initialize(args)
-    # # 1) generate the possible locations of signage
-    # po_graph.read_field(args, step1_fin=False)
-    # write_lp_1(args.filename_1, po_graph, args)
-    # sign_loc_info = optimize_lp_1(args.filename_1)
-    # np.save(args.filename_1_result, sign_loc_info)
-    # 2) generate the exiting_dir
+
+    # # 1)
+    # write_lp_1(po_graph, args)
+    # optimize_lp_1(po_graph, args)
+    # po_graph.printGraph()
+
+    # 2)
     po_graph.read_net(args)
     po_graph.printNetwork()
     # dirs = {}
@@ -63,11 +66,9 @@ def main():
 
     # # Second step: activate the necessary signage
     # po_graph = initialize(args)
-    # po_graph.read_field(args, step1_fin=True)
-    # write_lp_2(args.filename_2, po_graph, args)
-    # sign_activate = optimize_lp_2(args.filename_2)
-    # np.save(args.filename_2_result, sign_activate)
-    # po_graph.sign_activate = sign_activate
+    # po_graph.read_pre_results(args)
+    # write_lp_2(po_graph, args)
+    # optimize_lp_2(po_graph, args)
     # po_graph.printGraph()
     # # update the e on the po_graph
     # # po_graph.read_SigntoField(args.k, args.sign_q)
@@ -108,14 +109,14 @@ def initialize(args):
                  (2, 25, -1, args.exit_q)]
     danger_info = [(0, -1, 20, args.danger_q)]
     po_graph = PO_GRAPH(args.wide, args.length, args.gap)
-    po_graph.ped_info = ped_info
-    po_graph.exit_info = exit_info
-    po_graph.obs_info = obs_info
-    po_graph.danger_info = danger_info
+    po_graph.read_ObstoField(obs=obs_info, k=args.k)
+    po_graph.read_PedtoField(ped=ped_info, k=args.k)
+    po_graph.read_ExittoField(exit=exit_info, k=args.k)
+    po_graph.read_DangertoField(danger=danger_info, k=args.k)
     return po_graph
 
 
-def write_lp_1(file, po_graph, args):
+def write_lp_1(po_graph, args):
     """
     generate the locations of the signage settlements (activated and inactivated)
     with the consideration of evacuees' cognitive range and obstacle information
@@ -141,42 +142,7 @@ def write_lp_1(file, po_graph, args):
 
     # constraints:
     # construct the matrix to show the intersection condition between node and sign: dis_ns-ok inf-notok
-    num_node = len(po_graph.nodes)
-    obs_info = np.array(po_graph.obs_info)
-    dist_matrix_ns = np.zeros((num_node, num_node))
-    for node in tqdm(range(num_node)):
-        for sign in range(num_node):
-            if sign == node:
-                # dist_matrix_ns[node, sign] = 1e-9
-                dist_matrix_ns[node, sign] = 1
-                continue
-            node_loc = np.array([po_graph.nodes[node].x, po_graph.nodes[node].y])
-            sign_loc = np.array([po_graph.nodes[sign].x, po_graph.nodes[sign].y])
-            dis_ns = np.linalg.norm(node_loc - sign_loc)
-            if dis_ns <= args.per_dis:
-                dist_matrix_ns[node, sign] = 1
-                # for the potential signage position in perception area
-                for obs in range(len(obs_info)):
-                    obs_x, obs_y = obs_info[obs][1], obs_info[obs][2]
-                    obs_w, obs_l = obs_info[obs][3], obs_info[obs][4]
-                    # test the intersection with all the obstacle
-                    obs_point_1_x, obs_point_1_y = obs_x - obs_w / 2, obs_y
-                    obs_point_2_x, obs_point_2_y = obs_x + obs_w / 2, obs_y
-                    obs_point_3_x, obs_point_3_y = obs_x, obs_y - obs_l / 2
-                    obs_point_4_x, obs_point_4_y = obs_x, obs_y + obs_l / 2
-                    is_intersect_ns_temp = is_intersected(Point(obs_point_1_x, obs_point_1_y),
-                                                          Point(obs_point_2_x, obs_point_2_y),
-                                                          Point(node_loc[0], node_loc[1]),
-                                                          Point(sign_loc[0], sign_loc[1])) \
-                                           or is_intersected(Point(obs_point_3_x, obs_point_3_y),
-                                                             Point(obs_point_4_x, obs_point_4_y),
-                                                             Point(node_loc[0], node_loc[1]),
-                                                             Point(sign_loc[0], sign_loc[1]))
-                    if is_intersect_ns_temp:
-                        # dist_matrix_ns[node, sign] = float('inf')
-                        dist_matrix_ns[node, sign] = 0
-                        break
-
+    dist_matrix_ns = generate_dist_matrix_ns(po_graph, args.per_dis, args.filename_1_result_2)
     for node in range(num_node):
         # for sign in range(num_node):
         # m.addConstr(
@@ -186,11 +152,10 @@ def write_lp_1(file, po_graph, args):
                         * variables['x{}'.format(sign)] for sign in range(num_node)) >= 1, 'cons_signs{}'.format(node))
 
     # write in
-    m.write(filename=file)
-    np.save(args.filename_1_result_2, dist_matrix_ns)
+    m.write(filename=args.filename_1)
 
 
-def write_lp_2(file, po_graph, args):
+def write_lp_2(po_graph, args):
     """
     generate the optimization model with po_graph and save it as 'file'
     return: the .lp file
@@ -283,7 +248,7 @@ def write_lp_2(file, po_graph, args):
         # m.addConstr(confidence >= args.conf, 'confidence{}'.format(node))
 
     # write in
-    m.write(filename=file)
+    m.write(filename=args.filename_2)
 
 
 def write_lp_3(file, po_graph, node, args):

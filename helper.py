@@ -7,6 +7,7 @@ Data: 25th August 2021
 
 import numpy as np
 from gurobipy import *
+from tqdm import tqdm
 
 
 def intensity_cal(k, q, r):
@@ -142,6 +143,49 @@ def is_intersected(A, B, C, D):
            and (vector_product(CA, CB) * vector_product(DA, DB) <= 1e-9)
 
 
+def generate_dist_matrix_ns(po_graph, per_dis, filename):
+    """
+    generate the relationship between node and sign and save
+    return: dist_matrix_ns[node, sign]=0/1 1:the sign can be seen by node
+    """
+    num_node = len(po_graph.nodes)
+    obs_info = np.array(po_graph.obs_info)
+    dist_matrix_ns = np.ones((num_node, num_node))
+    for node in tqdm(range(num_node - 1)):
+        for sign in range(node + 1, num_node):
+            node_loc = np.array([po_graph.nodes[node].x, po_graph.nodes[node].y])
+            sign_loc = np.array([po_graph.nodes[sign].x, po_graph.nodes[sign].y])
+            dis_ns = np.linalg.norm(node_loc - sign_loc)
+            if dis_ns > per_dis:
+                dist_matrix_ns[node, sign] = 0
+                dist_matrix_ns[sign, node] = 0
+            else:
+                # for the potential signage position in perception area
+                for obs in range(len(obs_info)):
+                    obs_x, obs_y = obs_info[obs][1:3]
+                    obs_w, obs_l = obs_info[obs][3:5]
+                    # test the intersection with all the obstacle
+                    obs_point_1_x, obs_point_1_y = obs_x - obs_w / 2, obs_y
+                    obs_point_2_x, obs_point_2_y = obs_x + obs_w / 2, obs_y
+                    obs_point_3_x, obs_point_3_y = obs_x, obs_y - obs_l / 2
+                    obs_point_4_x, obs_point_4_y = obs_x, obs_y + obs_l / 2
+                    is_intersect_ns_temp = is_intersected(Point(obs_point_1_x, obs_point_1_y),
+                                                          Point(obs_point_2_x, obs_point_2_y),
+                                                          Point(node_loc[0], node_loc[1]),
+                                                          Point(sign_loc[0], sign_loc[1])) \
+                                           or is_intersected(Point(obs_point_3_x, obs_point_3_y),
+                                                             Point(obs_point_4_x, obs_point_4_y),
+                                                             Point(node_loc[0], node_loc[1]),
+                                                             Point(sign_loc[0], sign_loc[1]))
+                    if is_intersect_ns_temp:
+                        # dist_matrix_ns[node, sign] = float('inf')
+                        dist_matrix_ns[node, sign] = 0
+                        dist_matrix_ns[sign, node] = 0
+                        break
+    np.save(filename, dist_matrix_ns)
+    return dist_matrix_ns
+
+
 def pooling(obs_nodes_with_id, gap_min):
     """
     input obs_nodes_with_id array [id,x,y]
@@ -160,7 +204,6 @@ def pooling(obs_nodes_with_id, gap_min):
             obs_nodes_with_id[j][1:3] = mid_point
             if obs_nodes_with_id[i][0] == obs_nodes_with_id[j][0]:
                 dele_.append(j)
-    print(obs_nodes_with_id)
     print(dele_)
     return np.delete(obs_nodes_with_id, dele_, axis=0)
 
@@ -174,24 +217,77 @@ def get_poten_net_nodes(pooled_nodes_with_id):
     """
     size_ = np.shape(pooled_nodes_with_id)[0]
     poten_net_nodes = []
+    pooled_nodes_ids = {}
+    for i in range(size_):
+        pooled_nodes_ids[i] = []
+        for j in range(size_):
+            if list(pooled_nodes_with_id[i][1:3]) == list(pooled_nodes_with_id[j][1:3]):
+                pooled_nodes_ids[i].append(pooled_nodes_with_id[j][0])
+    print(pooled_nodes_ids)
     for i in range(size_ - 1):
         for j in range(i + 1, size_):
-            if pooled_nodes_with_id[i][0] == pooled_nodes_with_id[j][0]:
+            if list(set(pooled_nodes_ids[i]) & set(pooled_nodes_ids[j])):
                 continue
-            mid_point = (pooled_nodes_with_id[i][1:3] + pooled_nodes_with_id[j][1:3]) / 2
+            node_i = pooled_nodes_with_id[i][1:3]
+            node_j = pooled_nodes_with_id[j][1:3]
+            mid_point = (node_i + node_j) / 2
             poten_net_nodes.append(mid_point)
     return np.array(poten_net_nodes)
 
 
-# def get_poten_net_links()
+def get_fea_net_links(obs_info, poten_net_nodes):
+    """
+    generate the network link
+    with the consideration of no obstacle intersection and
+    return: matrix 0/1 nodes-nodes
+    """
+    size_ = np.shape(poten_net_nodes)[0]
+    obs_info = np.array(obs_info)
+    matrix_temp = np.zeros((size_, size_))
+    for i in range(size_ - 1):
+        for j in range(i + 1, size_):
+            node_i = poten_net_nodes[i]
+            node_j = poten_net_nodes[j]
+            matrix_temp[i, j] = 1
+            matrix_temp[j, i] = 1
+            for obs in range(len(obs_info)):
+                obs_x, obs_y = obs_info[obs][1:3]
+                obs_w, obs_l = obs_info[obs][3:5]
+                # test the intersection with all the obstacle
+                obs_point_1_x, obs_point_1_y = obs_x - obs_w / 2, obs_y
+                obs_point_2_x, obs_point_2_y = obs_x + obs_w / 2, obs_y
+                obs_point_3_x, obs_point_3_y = obs_x, obs_y - obs_l / 2
+                obs_point_4_x, obs_point_4_y = obs_x, obs_y + obs_l / 2
+                is_intersect_ns_temp = is_intersected(Point(obs_point_1_x, obs_point_1_y),
+                                                      Point(obs_point_2_x, obs_point_2_y),
+                                                      Point(node_i[0], node_i[1]),
+                                                      Point(node_j[0], node_j[1])) \
+                                       or is_intersected(Point(obs_point_3_x, obs_point_3_y),
+                                                         Point(obs_point_4_x, obs_point_4_y),
+                                                         Point(node_i[0], node_i[1]),
+                                                         Point(node_j[0], node_j[1]))
+                if is_intersect_ns_temp:
+                    matrix_temp[i, j] = 0
+                    matrix_temp[j, i] = 0
+                    break
 
-def optimize_lp_1(filename):
+    dele_ = []
+    for i in range(size_):
+        if sum(matrix_temp[i]) == 0:
+            dele_.append(i)
+    matrix_temp = np.delete(matrix_temp, dele_, axis=0)
+    matrix = np.delete(matrix_temp, dele_, axis=1)
+    nodes = np.delete(poten_net_nodes, dele_, axis=0)
+    return matrix, nodes
+
+
+def optimize_lp_1(po_graph, args):
     """
     solve the .lp file
     return: sign_loc_info (settlement of possible signage locations)
     sign_loc_info x{}=0/1:
     """
-    model = read(filename)
+    model = read(args.filename_1)
     model.optimize()
     print("Objective:", model.objVal)
     sign_loc_info = {}
@@ -200,16 +296,17 @@ def optimize_lp_1(filename):
         print("Parameter:", i.varname, "=", i.x)
         index = int(i.varname[1:])
         sign_loc_info[index] = i.x
-    return sign_loc_info
+    po_graph.sign_loc_info = sign_loc_info
+    np.save(args.filename_1_result, sign_loc_info)
 
 
-def optimize_lp_2(filename):
+def optimize_lp_2(po_graph, args):
     """
     solve the .lp file
     return: sign_info - activated
     sign_info s{}{}=0/1:
     """
-    model = read(filename)
+    model = read(args.filename_2)
     model.optimize()
     print("Objective:", model.objVal)
     sign_activate = {}
@@ -217,6 +314,9 @@ def optimize_lp_2(filename):
         print("Parameter:", i.varname, "=", i.x)
         if 's' in i.varname:
             sign_activate[i.varname] = i.x
+    po_graph.sign_activate = sign_activate
+    np.save(args.filename_2_result, sign_activate)
+
     return sign_activate
 
 
