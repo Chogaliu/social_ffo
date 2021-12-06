@@ -386,6 +386,7 @@ class PO_GRAPH:
         exit_info = self.exit_info
         danger_info = self.danger_info
         network_matrix = self.network_matrix
+        network_nodes = self.network_nodes
 
         # environment print
         plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
@@ -397,6 +398,7 @@ class PO_GRAPH:
 
         # nodes-links print with network_matrix
         if net_show:
+
 
 
 
