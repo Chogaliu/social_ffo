@@ -143,20 +143,20 @@ def is_intersected(A, B, C, D):
            and (vector_product(CA, CB) * vector_product(DA, DB) <= 1e-9)
 
 
-def generate_dist_matrix_ns(po_graph, per_dis, filename):
+def generate_dist_matrix_ns(po_graph, args):
     """
     generate the relationship between node and sign and save
     return: dist_matrix_ns[node, sign]=0/1 1:the sign can be seen by node
     """
     num_node = len(po_graph.nodes)
-    obs_info = np.array(po_graph.obs_info)
+    obs_info = po_graph.obs_info
     dist_matrix_ns = np.ones((num_node, num_node))
     for node in tqdm(range(num_node - 1)):
         for sign in range(node + 1, num_node):
             node_loc = np.array([po_graph.nodes[node].x, po_graph.nodes[node].y])
             sign_loc = np.array([po_graph.nodes[sign].x, po_graph.nodes[sign].y])
             dis_ns = np.linalg.norm(node_loc - sign_loc)
-            if dis_ns > per_dis:
+            if dis_ns > args.per_dis:
                 dist_matrix_ns[node, sign] = 0
                 dist_matrix_ns[sign, node] = 0
             else:
@@ -182,7 +182,7 @@ def generate_dist_matrix_ns(po_graph, per_dis, filename):
                         dist_matrix_ns[node, sign] = 0
                         dist_matrix_ns[sign, node] = 0
                         break
-    np.save(filename, dist_matrix_ns)
+    np.save(args.filename_1_result_2, dist_matrix_ns)
     return dist_matrix_ns
 
 
@@ -237,14 +237,15 @@ def get_poten_net_nodes(pooled_nodes_with_id):
 
 def get_fea_net_links(obs_info, poten_net_nodes):
     """
+    poten_net_nodes: array
+    obs_info: array
     generate the network link
     with the consideration of no obstacle intersection and
     return: matrix 0/1 nodes-nodes
     """
     size_ = np.shape(poten_net_nodes)[0]
-    obs_info = np.array(obs_info)
     matrix_temp = np.zeros((size_, size_))
-    for i in range(size_ - 1):
+    for i in tqdm(range(size_ - 1)):
         for j in range(i + 1, size_):
             node_i = poten_net_nodes[i]
             node_j = poten_net_nodes[j]

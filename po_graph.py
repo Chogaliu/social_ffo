@@ -40,16 +40,16 @@ class PO_GRAPH:
         self.gap = gap
         self.wid = int(dim_w / gap) + 1
         self.len = int(dim_l / gap) + 1
-        self.obs_info = 0
-        self.ped_info = 0
-        self.exit_info = 0
-        self.danger_info = 0
-        self.sign_activate = 0
-        self.sign_loc_info = 0
-        self.dist_matrix_ns = 0
-        self.dirs = 0
-        self.network_matrix = 0
-        self.network_nodes = 0
+        self.obs_info = 0  # array
+        self.ped_info = 0  # array
+        self.exit_info = 0  # array
+        self.danger_info = 0  # array
+        self.sign_activate = 0  # dict
+        self.sign_loc_info = 0  # dict
+        self.dist_matrix_ns = 0  # array
+        self.dirs = 0  # array
+        self.network_matrix = 0  # array
+        self.network_nodes = 0  # array
         self.grid_size = self.wid * self.len
 
         self.nodes = [PO_NODE(node % self.wid * self.gap, node // self.wid * self.gap, 0, 0)
@@ -90,7 +90,7 @@ class PO_GRAPH:
         4) generate the nodes-links matrix 0/1
         return: nodes-links matrix n-n:0/1 & feasible_nodes [x,y]
         """
-        obs_info = np.array(self.obs_info)
+        obs_info = self.obs_info
         obs_nodes = []  # list
         for obs_id in obs_info[:, 0]:
             id_o = int(obs_id)
@@ -109,7 +109,6 @@ class PO_GRAPH:
         self.network_nodes = feasible_nodes
         self.network_matrix = nodes_links_matrix
 
-
     def read_ObstoField(self, obs, k):
         """
         obs_info: lists of list of numpy array, each numpy array corresponds to an obstacle)
@@ -120,8 +119,8 @@ class PO_GRAPH:
         1.differentiable：every place
         2.non-differentiable: only the vertical place  (current)
         """
-        self.obs_info = obs
-        obs_info = np.array(self.obs_info)
+        self.obs_info = np.array(obs)
+        obs_info = self.obs_info
         dele_node = []  # used for extracting the taken-up area
         for node in range(len(self.nodes)):
             x = self.nodes[node].x
@@ -162,8 +161,8 @@ class PO_GRAPH:
         assume there is no eyesight limitation which is unrealized
         # congestion avoidance + herding influence
         """
-        self.ped_info = ped
-        ped_info = np.array(self.ped_info)
+        self.ped_info = np.array(ped)
+        ped_info = self.ped_info
         for node in range(len(self.nodes)):
             x = self.nodes[node].x
             y = self.nodes[node].y
@@ -191,8 +190,8 @@ class PO_GRAPH:
         # problem:
         no expected velocity & current velocity considered
         """
-        self.exit_info = exit
-        exit_info = np.array(self.exit_info)
+        self.exit_info = np.array(exit)
+        exit_info = self.exit_info
         for node in range(len(self.nodes)):
             x = self.nodes[node].x
             y = self.nodes[node].y
@@ -220,8 +219,8 @@ class PO_GRAPH:
         # problem:
         no expected velocity & current velocity considered
         """
-        self.danger_info = danger
-        danger_info = np.array(self.danger_info)
+        self.danger_info = np.array(danger)
+        danger_info = self.danger_info
         for node in range(len(self.nodes)):
             x = self.nodes[node].x
             y = self.nodes[node].y
@@ -346,7 +345,7 @@ class PO_GRAPH:
                     plt.annotate(
                         "",
                         xytext=(x, y),
-                        xy=(x + dir_sign[0]*5, y + dir_sign[1]*5),
+                        xy=(x + dir_sign[0] * 5, y + dir_sign[1] * 5),
                         arrowprops=dict(arrowstyle='->', color='red', lw=1),
                         size=10,
                     )
@@ -381,12 +380,12 @@ class PO_GRAPH:
         net_show: if the network is shown
         """
         fig, ax = plt.subplots()
-        num_node = len(self.nodes)
         obs_info = self.obs_info
         exit_info = self.exit_info
         danger_info = self.danger_info
         network_matrix = self.network_matrix
         network_nodes = self.network_nodes
+        num_net_node = len(network_nodes)
 
         # environment print
         plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
@@ -398,9 +397,13 @@ class PO_GRAPH:
 
         # nodes-links print with network_matrix
         if net_show:
-
-
-
+            for n in range(num_net_node - 1):
+                for n_temp in range(n - 1, num_net_node):
+                    if network_matrix[n, n_temp] == 1:
+                        link_x = [network_nodes[n][0], network_nodes[n_temp][0]]
+                        link_y = [network_nodes[n][1], network_nodes[n_temp][1]]
+                        plt.plot(link_x, link_y, color='k', linewidth=1)
+                        plt.scatter(link_x, link_y, marker='.', c='yellow', alpha=1)
 
         x_major_locator = MultipleLocator(1)
         y_major_locator = MultipleLocator(1)
@@ -411,6 +414,7 @@ class PO_GRAPH:
         plt.axis('equal')
         plt.savefig('figure_network{}.png'.format(time.time()))
         # plt.show()
+
 
 class PO_NODE:
 

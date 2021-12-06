@@ -142,7 +142,7 @@ def write_lp_1(po_graph, args):
 
     # constraints:
     # construct the matrix to show the intersection condition between node and sign: dis_ns-ok inf-notok
-    dist_matrix_ns = generate_dist_matrix_ns(po_graph, args.per_dis, args.filename_1_result_2)
+    dist_matrix_ns = generate_dist_matrix_ns(po_graph, args)
     for node in range(num_node):
         # for sign in range(num_node):
         # m.addConstr(
