@@ -397,13 +397,14 @@ class PO_GRAPH:
 
         # nodes-links print with network_matrix
         if net_show:
-            for n in range(num_net_node - 1):
+            for n in tqdm(range(num_net_node - 1)):
                 for n_temp in range(n - 1, num_net_node):
-                    if network_matrix[n, n_temp] == 1:
-                        link_x = [network_nodes[n][0], network_nodes[n_temp][0]]
-                        link_y = [network_nodes[n][1], network_nodes[n_temp][1]]
-                        plt.plot(link_x, link_y, color='k', linewidth=1)
-                        plt.scatter(link_x, link_y, marker='.', c='yellow', alpha=1)
+                    if network_matrix[n, n_temp] == 0:
+                        continue
+                    link_x = [network_nodes[n][0], network_nodes[n_temp][0]]
+                    link_y = [network_nodes[n][1], network_nodes[n_temp][1]]
+                    plt.plot(link_x, link_y, color='k', linewidth=1)
+                    plt.scatter(link_x, link_y, marker='.', c='yellow', alpha=1)
 
         x_major_locator = MultipleLocator(1)
         y_major_locator = MultipleLocator(1)
