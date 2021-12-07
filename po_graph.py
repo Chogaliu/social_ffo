@@ -83,29 +83,35 @@ class PO_GRAPH:
         1) generate the boundary nodes
         2) pooling nodes
         3) connect N1 with N2 and find the middle nodes as the potential nodes (except ones within same obstacle)
-        2. nodes' feasible links
+            also no N1,N2 on intersection with obstacle
+        2. nodes' feasible links （construct network）
         1) generate all links between nodes
         2) if feasible (no intersection with obstacle)
         3) record all the feasible links and feasible nodes
         4) generate the nodes-links matrix 0/1
         return: nodes-links matrix n-n:0/1 & feasible_nodes [x,y]
         """
+        # 1.1)
         obs_info = self.obs_info
+        exit_info = self.exit_info
         obs_nodes = []  # list
-        for obs_id in obs_info[:, 0]:
-            id_o = int(obs_id)
-            x, y = obs_info[id_o][1:3]
-            w, l = obs_info[id_o][3:5]
-            obs_nodes.append((id_o, x - w / 2, y - l / 2))
-            obs_nodes.append((id_o, x + w / 2, y - l / 2))
-            obs_nodes.append((id_o, x - w / 2, y + l / 2))
-            obs_nodes.append((id_o, x + w / 2, y + l / 2))
+        for obs_idx in range(len(obs_info)):
+            x, y = obs_info[obs_idx][1:3]
+            w, l = obs_info[obs_idx][3:5]
+            obs_nodes.append((obs_idx, x - w / 2, y - l / 2))
+            obs_nodes.append((obs_idx, x + w / 2, y - l / 2))
+            obs_nodes.append((obs_idx, x - w / 2, y + l / 2))
+            obs_nodes.append((obs_idx, x + w / 2, y + l / 2))
+        # 1.2)
         # pooling(gap_min) here is used to deal with the "room" condition and close obs_boundary point
         # point is infeasible due to the close distance to pass through
         nodes_1 = pooling(obs_nodes_with_id=np.array(obs_nodes), gap_min=1.414)
         nodes_2 = pooling(obs_nodes_with_id=nodes_1, gap_min=1.414)
-        poten_nodes = get_poten_net_nodes(nodes_2)
-        nodes_links_matrix, feasible_nodes = get_fea_net_links(obs_info, poten_nodes)
+        # 1.3)
+        poten_nodes = get_poten_net_nodes(nodes_2, obs_info)
+        # 2.
+        nodes_links_matrix, feasible_nodes = get_net_links(obs_info, exit_info, poten_nodes)
+
         self.network_nodes = feasible_nodes
         self.network_matrix = nodes_links_matrix
 
@@ -293,7 +299,7 @@ class PO_GRAPH:
         plt.scatter(ped_info[:, 1], ped_info[:, 2], c='blue', alpha=1)
         plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
         plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
-        for obs in range(np.shape(obs_info)[0]):
+        for obs in range(len(obs_info)):
             rect = mpathes.Rectangle(obs_info[obs][1:3] - obs_info[obs][3:5] / 2, obs_info[obs][3], obs_info[obs][4],
                                      color='black', alpha=0.5)
             ax.add_patch(rect)
@@ -390,21 +396,21 @@ class PO_GRAPH:
         # environment print
         plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
         plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
-        for obs in range(np.shape(obs_info)[0]):
+        for obs in range(len(obs_info)):
             rect = mpathes.Rectangle(obs_info[obs][1:3] - obs_info[obs][3:5] / 2, obs_info[obs][3], obs_info[obs][4],
                                      color='black', alpha=0.5)
             ax.add_patch(rect)
 
         # nodes-links print with network_matrix
         if net_show:
-            for n in tqdm(range(num_net_node - 1)):
-                for n_temp in range(n - 1, num_net_node):
-                    if network_matrix[n, n_temp] == 0:
-                        continue
-                    link_x = [network_nodes[n][0], network_nodes[n_temp][0]]
-                    link_y = [network_nodes[n][1], network_nodes[n_temp][1]]
-                    plt.plot(link_x, link_y, color='k', linewidth=1)
-                    plt.scatter(link_x, link_y, marker='.', c='yellow', alpha=1)
+            plt.scatter(network_nodes[:, 0], network_nodes[:, 1], marker='.', c='yellow', alpha=1)
+            # for n in tqdm(range(num_net_node - 1)):
+            #     for n_temp in range(n - 1, num_net_node):
+            #         if network_matrix[n, n_temp] == 0:
+            #             continue
+            #         link_x = [network_nodes[n][0], network_nodes[n_temp][0]]
+            #         link_y = [network_nodes[n][1], network_nodes[n_temp][1]]
+            #         plt.plot(link_x, link_y, color='k', linewidth=1)
 
         x_major_locator = MultipleLocator(1)
         y_major_locator = MultipleLocator(1)

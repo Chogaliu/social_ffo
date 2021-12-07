@@ -143,6 +143,35 @@ def is_intersected(A, B, C, D):
            and (vector_product(CA, CB) * vector_product(DA, DB) <= 1e-9)
 
 
+def check_intersection_state(obs_info, node_1, node_2):
+    """
+    used to check if the link between node_1 and node_2 have intersection with obs
+    node_1/2, obs_info: array
+    return:
+    True: have intersection(s)
+    False: No intersections
+    """
+    for obs in range(len(obs_info)):
+        obs_x, obs_y = obs_info[obs][1:3]
+        obs_w, obs_l = obs_info[obs][3:5]
+        # test the intersection with all the obstacle
+        obs_point_1_x, obs_point_1_y = obs_x - obs_w / 2, obs_y
+        obs_point_2_x, obs_point_2_y = obs_x + obs_w / 2, obs_y
+        obs_point_3_x, obs_point_3_y = obs_x, obs_y - obs_l / 2
+        obs_point_4_x, obs_point_4_y = obs_x, obs_y + obs_l / 2
+        is_intersect_ns_temp = is_intersected(Point(obs_point_1_x, obs_point_1_y),
+                                              Point(obs_point_2_x, obs_point_2_y),
+                                              Point(node_1[0], node_1[1]),
+                                              Point(node_2[0], node_2[1])) \
+                               or is_intersected(Point(obs_point_3_x, obs_point_3_y),
+                                                 Point(obs_point_4_x, obs_point_4_y),
+                                                 Point(node_1[0], node_1[1]),
+                                                 Point(node_2[0], node_2[1]))
+        if is_intersect_ns_temp:
+            return True
+    return False
+
+
 def generate_dist_matrix_ns(po_graph, args):
     """
     generate the relationship between node and sign and save
@@ -161,27 +190,9 @@ def generate_dist_matrix_ns(po_graph, args):
                 dist_matrix_ns[sign, node] = 0
             else:
                 # for the potential signage position in perception area
-                for obs in range(len(obs_info)):
-                    obs_x, obs_y = obs_info[obs][1:3]
-                    obs_w, obs_l = obs_info[obs][3:5]
-                    # test the intersection with all the obstacle
-                    obs_point_1_x, obs_point_1_y = obs_x - obs_w / 2, obs_y
-                    obs_point_2_x, obs_point_2_y = obs_x + obs_w / 2, obs_y
-                    obs_point_3_x, obs_point_3_y = obs_x, obs_y - obs_l / 2
-                    obs_point_4_x, obs_point_4_y = obs_x, obs_y + obs_l / 2
-                    is_intersect_ns_temp = is_intersected(Point(obs_point_1_x, obs_point_1_y),
-                                                          Point(obs_point_2_x, obs_point_2_y),
-                                                          Point(node_loc[0], node_loc[1]),
-                                                          Point(sign_loc[0], sign_loc[1])) \
-                                           or is_intersected(Point(obs_point_3_x, obs_point_3_y),
-                                                             Point(obs_point_4_x, obs_point_4_y),
-                                                             Point(node_loc[0], node_loc[1]),
-                                                             Point(sign_loc[0], sign_loc[1]))
-                    if is_intersect_ns_temp:
-                        # dist_matrix_ns[node, sign] = float('inf')
-                        dist_matrix_ns[node, sign] = 0
-                        dist_matrix_ns[sign, node] = 0
-                        break
+                if check_intersection_state(obs_info, node_loc, sign_loc):
+                    dist_matrix_ns[node, sign] = 0
+                    dist_matrix_ns[sign, node] = 0
     np.save(args.filename_1_result_2, dist_matrix_ns)
     return dist_matrix_ns
 
@@ -189,7 +200,7 @@ def generate_dist_matrix_ns(po_graph, args):
 def pooling(obs_nodes_with_id, gap_min):
     """
     input obs_nodes_with_id array [id,x,y]
-    monitor the close nodes and level them into one node [gap_min]
+    monitor the close nodes and combine them into one node by taking the middle point
     return: pooled nodes with minimum gap limit
     """
     size_ = np.shape(obs_nodes_with_id)[0]
@@ -202,17 +213,18 @@ def pooling(obs_nodes_with_id, gap_min):
             mid_point = (obs_nodes_with_id[i][1:3] + obs_nodes_with_id[j][1:3]) / 2
             obs_nodes_with_id[i][1:3] = mid_point
             obs_nodes_with_id[j][1:3] = mid_point
+            # if the same pooled point achieved in the same obstacle twice, delete one
             if obs_nodes_with_id[i][0] == obs_nodes_with_id[j][0]:
                 dele_.append(j)
     print(dele_)
     return np.delete(obs_nodes_with_id, dele_, axis=0)
 
 
-def get_poten_net_nodes(pooled_nodes_with_id):
+def get_poten_net_nodes(pooled_nodes_with_id, obs_info):
     """
     input pooled obs_nodes_with_id array [id,x,y] generated from pooling
     generate the middle point for each nodes pair
-    (nodes pairs are not allowed within the same obstacle)
+    (nodes pairs are not allowed within the same obstacle or intersection with obstacles)
     return: potential nodes for network [x,y]
     """
     size_ = np.shape(pooled_nodes_with_id)[0]
@@ -230,19 +242,28 @@ def get_poten_net_nodes(pooled_nodes_with_id):
                 continue
             node_i = pooled_nodes_with_id[i][1:3]
             node_j = pooled_nodes_with_id[j][1:3]
+            non_temp = list(map(int, list(set(pooled_nodes_ids[i]) | set(pooled_nodes_ids[j]))))
+            obs_info_temp = np.delete(obs_info, non_temp, axis=0)
+            print(obs_info_temp)
+            a = check_intersection_state(obs_info_temp, node_i, node_j)
+            if check_intersection_state(obs_info_temp, node_i, node_j):
+                continue
             mid_point = (node_i + node_j) / 2
             poten_net_nodes.append(mid_point)
     return np.array(poten_net_nodes)
 
 
-def get_fea_net_links(obs_info, poten_net_nodes):
+def get_net_links(obs_info, exit_info, poten_net_nodes):
     """
     poten_net_nodes: array
     obs_info: array
-    generate the network link
-    with the consideration of no obstacle intersection and
+    exit_info: array
+    generate the network link and nodes
+    with the consideration of feasible links (no obstacle intersection)
+    and no non-feasible_link node
     return: matrix 0/1 nodes-nodes
     """
+    poten_net_nodes = np.vstack((poten_net_nodes, exit_info[:, 1:3]))
     size_ = np.shape(poten_net_nodes)[0]
     matrix_temp = np.zeros((size_, size_))
     for i in tqdm(range(size_ - 1)):
@@ -251,27 +272,9 @@ def get_fea_net_links(obs_info, poten_net_nodes):
             node_j = poten_net_nodes[j]
             matrix_temp[i, j] = 1
             matrix_temp[j, i] = 1
-            for obs in range(len(obs_info)):
-                obs_x, obs_y = obs_info[obs][1:3]
-                obs_w, obs_l = obs_info[obs][3:5]
-                # test the intersection with all the obstacle
-                obs_point_1_x, obs_point_1_y = obs_x - obs_w / 2, obs_y
-                obs_point_2_x, obs_point_2_y = obs_x + obs_w / 2, obs_y
-                obs_point_3_x, obs_point_3_y = obs_x, obs_y - obs_l / 2
-                obs_point_4_x, obs_point_4_y = obs_x, obs_y + obs_l / 2
-                is_intersect_ns_temp = is_intersected(Point(obs_point_1_x, obs_point_1_y),
-                                                      Point(obs_point_2_x, obs_point_2_y),
-                                                      Point(node_i[0], node_i[1]),
-                                                      Point(node_j[0], node_j[1])) \
-                                       or is_intersected(Point(obs_point_3_x, obs_point_3_y),
-                                                         Point(obs_point_4_x, obs_point_4_y),
-                                                         Point(node_i[0], node_i[1]),
-                                                         Point(node_j[0], node_j[1]))
-                if is_intersect_ns_temp:
-                    matrix_temp[i, j] = 0
-                    matrix_temp[j, i] = 0
-                    break
-
+            if check_intersection_state(obs_info, node_i, node_j):
+                matrix_temp[i, j] = 0
+                matrix_temp[j, i] = 0
     dele_ = []
     for i in range(size_):
         if sum(matrix_temp[i]) == 0:

@@ -58,6 +58,7 @@ def main():
     # 2)
     po_graph.read_net(args)
     po_graph.printNetwork()
+    print(np.shape(po_graph.network_matrix))
     # dirs = {}
     # for node in range(len(po_graph.nodes)):
     #     write_lp_3(args.filename_3, po_graph, node, args)
@@ -253,6 +254,7 @@ def write_lp_2(po_graph, args):
 
 def write_lp_3(file, po_graph, node, args):
     """
+    network modeling problem with a shortest path problem given the node
     generate the path of the shortest exiting given the exiting network
     for the given node
     return: the .lp file
