@@ -98,17 +98,15 @@ class PO_GRAPH:
         for obs_idx in range(len(obs_info)):
             x, y = obs_info[obs_idx][1:3]
             w, l = obs_info[obs_idx][3:5]
-            obs_nodes.append((obs_idx, x - w / 2, y - l / 2))
-            obs_nodes.append((obs_idx, x + w / 2, y - l / 2))
-            obs_nodes.append((obs_idx, x - w / 2, y + l / 2))
-            obs_nodes.append((obs_idx, x + w / 2, y + l / 2))
+            obs_nodes.append((obs_idx, x, y))
+            obs_nodes.append((obs_idx, x + w, y))
+            obs_nodes.append((obs_idx, x, y + l))
+            obs_nodes.append((obs_idx, x + w, y + l))
         # 1.2)
         # pooling(gap_min) here is used to deal with the "room" condition and close obs_boundary point
-        # point is infeasible due to the close distance to pass through
-        nodes_1 = pooling(obs_nodes_with_id=np.array(obs_nodes), gap_min=1.414)
-        nodes_2 = pooling(obs_nodes_with_id=nodes_1, gap_min=1.414)
+        pooled_nodes_with_id, pooled_nodes_ids = pooling(obs_nodes_with_id=np.array(obs_nodes))
         # 1.3)
-        poten_nodes = get_poten_net_nodes(nodes_2, obs_info)
+        poten_nodes = get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info)
         # 2.
         nodes_links_matrix, feasible_nodes = get_net_links(obs_info, exit_info, poten_nodes)
 
@@ -118,7 +116,7 @@ class PO_GRAPH:
     def read_ObstoField(self, obs, k):
         """
         obs_info: lists of list of numpy array, each numpy array corresponds to an obstacle)
-        [obs_id,o_x,o_y,o_w,o_l,o_q]
+        [obs_id,lb_x,lb_y,o_w,o_l,o_q]
         also delete the occupied node
         return:
         # two ways to conduct:
@@ -133,21 +131,21 @@ class PO_GRAPH:
             y = self.nodes[node].y
             temp_inten = np.array([0, 0], dtype=float)
             for n in range(len(obs_info)):
-                obs_x, obs_y = obs_info[n][1], obs_info[n][2]
-                obs_w, obs_l, obs_q = obs_info[n][3], obs_info[n][4], obs_info[n][5]
-                if obs_x - obs_w / 2 <= x <= obs_x + obs_w / 2:
-                    if y > obs_y + obs_l / 2:
-                        temp_inten += np.array([0, inten_cal(k, obs_q, y - (obs_y + obs_l / 2))])
-                    elif y < obs_y - obs_l / 2:
-                        temp_inten += np.array([0, -inten_cal(k, obs_q, (obs_y - obs_l / 2) - y)])
+                obs_w, obs_l, obs_q = obs_info[n][3:6]
+                obs_x, obs_y = obs_info[n][1:3]
+                if obs_x <= x <= obs_x + obs_w:
+                    if y > obs_y + obs_l:
+                        temp_inten += np.array([0, inten_cal(k, obs_q, y - (obs_y + obs_l))])
+                    elif y < obs_y:
+                        temp_inten += np.array([0, -inten_cal(k, obs_q, obs_y - y)])
                     else:
                         dele_node.append(node)
                         break
-                if obs_y - obs_l / 2 <= y <= obs_y + obs_l / 2:
-                    if x > obs_x + obs_w / 2:
-                        temp_inten += np.array([inten_cal(k, obs_q, x - (obs_x + obs_w / 2)), 0])
-                    elif x < obs_x - obs_w / 2:
-                        temp_inten += np.array([-inten_cal(k, obs_q, (obs_x - obs_w / 2) - x), 0])
+                if obs_y <= y <= obs_y + obs_l:
+                    if x > obs_x + obs_w:
+                        temp_inten += np.array([inten_cal(k, obs_q, x - (obs_x + obs_w)), 0])
+                    elif x < obs_x:
+                        temp_inten += np.array([-inten_cal(k, obs_q, obs_x - x), 0])
                     else:
                         dele_node.append(node)
                         break
@@ -300,7 +298,7 @@ class PO_GRAPH:
         plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
         plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
         for obs in range(len(obs_info)):
-            rect = mpathes.Rectangle(obs_info[obs][1:3] - obs_info[obs][3:5] / 2, obs_info[obs][3], obs_info[obs][4],
+            rect = mpathes.Rectangle(obs_info[obs][1:3], obs_info[obs][3], obs_info[obs][4],
                                      color='black', alpha=0.5)
             ax.add_patch(rect)
 
@@ -397,7 +395,7 @@ class PO_GRAPH:
         plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
         plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
         for obs in range(len(obs_info)):
-            rect = mpathes.Rectangle(obs_info[obs][1:3] - obs_info[obs][3:5] / 2, obs_info[obs][3], obs_info[obs][4],
+            rect = mpathes.Rectangle(obs_info[obs][1:3], obs_info[obs][3], obs_info[obs][4],
                                      color='black', alpha=0.5)
             ax.add_patch(rect)
 

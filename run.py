@@ -83,28 +83,33 @@ def initialize(args):
     obs_info requirements:
     1/ the left-bottom point and the width&length
     2/ in rectangle shape
-    3/ continuous without interruption by other obstacles
+    3/ must be continuous without intersection by other obstacles
     """
 
-    obs_info = [(0, 10.5, 6, 1, 12, args.obs_q),
-                (1, 25.5, 6, 1, 12, args.obs_q),
-                (2, 11.5, 12.5, 3, 1, args.obs_q),
-                (3, 24.5, 12.5, 3, 1, args.obs_q),
-                (4, 40.5, 4, 1, 8, args.obs_q),
-                (5, 10, 27.5, 20, 1, args.obs_q),
-                (6, 15.5, 45, 1, 10, args.obs_q),
-                (7, 21, 39.5, 12, 1, args.obs_q),
-                (8, 40.5, 35, 1, 30, args.obs_q),
-                (9, 34, 30.5, 12, 1, args.obs_q),
+    obs_info = [(0, 10, 0, 1, 12, args.obs_q),
+                (1, 25, 0, 1, 12, args.obs_q),
+                (2, 10, 12, 3, 1, args.obs_q),
+                (3, 23, 12, 3, 1, args.obs_q),
+                (4, 40, 0, 1, 8, args.obs_q),
+                (5, 0, 27, 20, 1, args.obs_q),
+                (6, 15, 40, 1, 10, args.obs_q),
+                (7, 15, 39, 12, 1, args.obs_q),
+                (8, 40, 20, 1, 10, args.obs_q),
+                (9, 28, 30, 12, 1, args.obs_q),
                 # walls:
-                (10, -0.5, 39, 1, 24, args.obs_q),
-                (11, -0.5, 6, 1, 14, args.obs_q),
-                (12, 10, -0.5, 20, 1, args.obs_q),
-                (13, 40, -0.5, 20, 1, args.obs_q),
-                (14, 50.5, 9, 1, 20, args.obs_q),
-                (15, 50.5, 41, 1, 20, args.obs_q),
-                (16, 10, 50.5, 20, 1, args.obs_q),
-                (17, 40, 50.5, 20, 1, args.obs_q),
+                (10, -1, 27, 1, 24, args.obs_q),
+                (11, -1, 7, 1, 14, args.obs_q),
+                (12, 0, -1, 10, 1, args.obs_q),
+                (13, 30, -1, 10, 1, args.obs_q),
+                (14, 50, -1, 1, 20, args.obs_q),
+                (15, 50, 31, 1, 20, args.obs_q),
+                (16, 0, 50, 15, 1, args.obs_q),
+                (17, 30, 50, 10, 1, args.obs_q),
+                (18, 40, -1, 10, 1, args.obs_q),
+                (19, 40, 50, 10, 1, args.obs_q),
+                (20, 10, -1, 10, 1, args.obs_q),
+                (21, 15, 50, 5, 1, args.obs_q),
+                (22, 40, 30, 1, 20, args.obs_q)
                 ]
     # need more information extracted from trajectory
     ped_info = [(0, 7.5, 8.5, args.ped_q),

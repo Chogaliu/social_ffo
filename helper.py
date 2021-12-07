@@ -155,10 +155,10 @@ def check_intersection_state(obs_info, node_1, node_2):
         obs_x, obs_y = obs_info[obs][1:3]
         obs_w, obs_l = obs_info[obs][3:5]
         # test the intersection with all the obstacle
-        obs_point_1_x, obs_point_1_y = obs_x - obs_w / 2, obs_y
-        obs_point_2_x, obs_point_2_y = obs_x + obs_w / 2, obs_y
-        obs_point_3_x, obs_point_3_y = obs_x, obs_y - obs_l / 2
-        obs_point_4_x, obs_point_4_y = obs_x, obs_y + obs_l / 2
+        obs_point_1_x, obs_point_1_y = obs_x, obs_y
+        obs_point_2_x, obs_point_2_y = obs_x + obs_w, obs_y + obs_l
+        obs_point_3_x, obs_point_3_y = obs_x, obs_y + obs_l
+        obs_point_4_x, obs_point_4_y = obs_x + obs_w, obs_y
         is_intersect_ns_temp = is_intersected(Point(obs_point_1_x, obs_point_1_y),
                                               Point(obs_point_2_x, obs_point_2_y),
                                               Point(node_1[0], node_1[1]),
@@ -197,30 +197,55 @@ def generate_dist_matrix_ns(po_graph, args):
     return dist_matrix_ns
 
 
-def pooling(obs_nodes_with_id, gap_min):
+def pooling_within(obs_nodes_with_id, gap_min=1.42):
     """
     input obs_nodes_with_id array [id,x,y]
-    monitor the close nodes and combine them into one node by taking the middle point
+    monitor the close nodes within same obstacle and combine them into one node by taking the middle point
+    in other word, if the same pooled point achieved in the same obstacle twice, delete one
     return: pooled nodes with minimum gap limit
     """
     size_ = np.shape(obs_nodes_with_id)[0]
     dele_ = []
     for i in range(size_ - 1):
         for j in range(i + 1, size_):
-            dis = np.linalg.norm(obs_nodes_with_id[i][1:3] - obs_nodes_with_id[j][1:3])
-            if dis > gap_min:
-                continue
-            mid_point = (obs_nodes_with_id[i][1:3] + obs_nodes_with_id[j][1:3]) / 2
-            obs_nodes_with_id[i][1:3] = mid_point
-            obs_nodes_with_id[j][1:3] = mid_point
-            # if the same pooled point achieved in the same obstacle twice, delete one
             if obs_nodes_with_id[i][0] == obs_nodes_with_id[j][0]:
+                dis = np.linalg.norm(obs_nodes_with_id[i][1:3] - obs_nodes_with_id[j][1:3])
+                if dis > gap_min:
+                    continue
+                mid_point = (obs_nodes_with_id[i][1:3] + obs_nodes_with_id[j][1:3]) / 2
+                obs_nodes_with_id[i][1:3] = mid_point
+                obs_nodes_with_id[j][1:3] = mid_point
                 dele_.append(j)
     print(dele_)
     return np.delete(obs_nodes_with_id, dele_, axis=0)
 
 
-def get_poten_net_nodes(pooled_nodes_with_id, obs_info):
+def pooling_combine(pooled_nodes_with_id, gap_min=1.42):
+    """
+    input obs_nodes_with_id array [id,x,y]
+    Scene: point is infeasible due to the close distance to pass through
+    monitor the close nodes from different obstacles and label them into the obstacle id
+    return: pooled_nodes_ids
+    """
+    size_ = np.shape(pooled_nodes_with_id)[0]
+    pooled_nodes_ids = {}
+    for i in range(size_):
+        pooled_nodes_ids[i] = []
+        for j in range(size_):
+            dis = np.linalg.norm(pooled_nodes_with_id[i][1:3] - pooled_nodes_with_id[j][1:3])
+            if dis <= gap_min:
+                pooled_nodes_ids[i].append(pooled_nodes_with_id[j][0])
+    return pooled_nodes_ids
+
+
+def pooling(obs_nodes_with_id):
+    # pooling_within may not necessary
+    pooled_nodes_with_id = pooling_within(pooling_within(obs_nodes_with_id))
+    pooled_nodes_ids = pooling_combine(pooled_nodes_with_id)
+    return pooled_nodes_with_id, pooled_nodes_ids
+
+
+def get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info):
     """
     input pooled obs_nodes_with_id array [id,x,y] generated from pooling
     generate the middle point for each nodes pair
@@ -229,23 +254,19 @@ def get_poten_net_nodes(pooled_nodes_with_id, obs_info):
     """
     size_ = np.shape(pooled_nodes_with_id)[0]
     poten_net_nodes = []
-    pooled_nodes_ids = {}
-    for i in range(size_):
-        pooled_nodes_ids[i] = []
-        for j in range(size_):
-            if list(pooled_nodes_with_id[i][1:3]) == list(pooled_nodes_with_id[j][1:3]):
-                pooled_nodes_ids[i].append(pooled_nodes_with_id[j][0])
-    print(pooled_nodes_ids)
+    appeared = []
     for i in range(size_ - 1):
         for j in range(i + 1, size_):
             if list(set(pooled_nodes_ids[i]) & set(pooled_nodes_ids[j])):
                 continue
+            if str(pooled_nodes_ids[i])+';'+str(pooled_nodes_ids[j]) in appeared or \
+                    str(pooled_nodes_ids[j])+';'+str(pooled_nodes_ids[i]) in appeared:
+                continue
+            appeared.append(str(pooled_nodes_ids[i]) + ';' + str(pooled_nodes_ids[j]))
             node_i = pooled_nodes_with_id[i][1:3]
             node_j = pooled_nodes_with_id[j][1:3]
             non_temp = list(map(int, list(set(pooled_nodes_ids[i]) | set(pooled_nodes_ids[j]))))
             obs_info_temp = np.delete(obs_info, non_temp, axis=0)
-            print(obs_info_temp)
-            a = check_intersection_state(obs_info_temp, node_i, node_j)
             if check_intersection_state(obs_info_temp, node_i, node_j):
                 continue
             mid_point = (node_i + node_j) / 2
