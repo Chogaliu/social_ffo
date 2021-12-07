@@ -77,8 +77,15 @@ def main():
 
 
 def initialize(args):
-    # po_graph initialize: load the information and influence of ped, obs, exit, danger, (sign_loc_info)
-    # initialize for Step 1 step1_fin = False; for Step 2 step1_fin = True
+    """
+    po_graph initialize: load the information and influence of ped, obs, exit, danger, (sign_loc_info)
+    initialize for Step 1 step1_fin = False; for Step 2 step1_fin = True
+    obs_info requirements:
+    1/ the left-bottom point and the width&length
+    2/ in rectangle shape
+    3/ continuous without interruption by other obstacles
+    """
+
     obs_info = [(0, 10.5, 6, 1, 12, args.obs_q),
                 (1, 25.5, 6, 1, 12, args.obs_q),
                 (2, 11.5, 12.5, 3, 1, args.obs_q),
