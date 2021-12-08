@@ -220,7 +220,7 @@ def pooling_within(obs_nodes_with_id, gap_min=1.42):
     return np.delete(obs_nodes_with_id, dele_, axis=0)
 
 
-def pooling_combine(pooled_nodes_with_id, gap_min=1.42):
+def pooling_combine_id(pooled_nodes_with_id, gap_min=1.42):
     """
     input obs_nodes_with_id array [id,x,y]
     Scene: point is infeasible due to the close distance to pass through
@@ -241,7 +241,7 @@ def pooling_combine(pooled_nodes_with_id, gap_min=1.42):
 def pooling(obs_nodes_with_id):
     # pooling_within may not necessary
     pooled_nodes_with_id = pooling_within(pooling_within(obs_nodes_with_id))
-    pooled_nodes_ids = pooling_combine(pooled_nodes_with_id)
+    pooled_nodes_ids = pooling_combine_id(pooled_nodes_with_id)
     return pooled_nodes_with_id, pooled_nodes_ids
 
 
@@ -250,13 +250,18 @@ def get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info):
     input pooled obs_nodes_with_id array [id,x,y] generated from pooling
     generate the middle point for each nodes pair
     (nodes pairs are not allowed within the same obstacle or intersection with obstacles)
+    (nodes pairs only generated from the node with one obstacle id)
     return: potential nodes for network [x,y]
     """
     size_ = np.shape(pooled_nodes_with_id)[0]
     poten_net_nodes = []
     appeared = []
     for i in range(size_ - 1):
+        if len(pooled_nodes_ids[i]) > 1:
+            continue
         for j in range(i + 1, size_):
+            if len(pooled_nodes_ids[j]) > 1:
+                continue
             if list(set(pooled_nodes_ids[i]) & set(pooled_nodes_ids[j])):
                 continue
             if str(pooled_nodes_ids[i])+';'+str(pooled_nodes_ids[j]) in appeared or \
