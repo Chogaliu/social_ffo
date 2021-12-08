@@ -288,7 +288,7 @@ def get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info):
     return np.array(poten_net_nodes)
 
 
-def get_net_links(obs_info, exit_info, poten_net_nodes):
+def get_net_links(obs_info, poten_net_nodes):
     """
     poten_net_nodes: array
     obs_info: array
@@ -296,9 +296,9 @@ def get_net_links(obs_info, exit_info, poten_net_nodes):
     generate the network link and nodes
     with the consideration of feasible links (no obstacle intersection)
     and no non-feasible_link node
-    return: matrix 0/1 nodes-nodes
+    return: matrix 0/1 nodes-nodes and feasible nodes location
     """
-    poten_net_nodes = np.vstack((poten_net_nodes, exit_info[:, 1:3]))
+    # poten_net_nodes = np.vstack((poten_net_nodes, exit_info[:, 1:3]))
     size_ = np.shape(poten_net_nodes)[0]
     matrix_temp = np.zeros((size_, size_))
     for i in tqdm(range(size_ - 1)):
@@ -357,23 +357,3 @@ def optimize_lp_2(po_graph, args):
     np.save(args.filename_2_result, sign_activate)
 
     return sign_activate
-
-
-def optimize_lp_3(filename, po_graph):
-    """
-    solve the .lp file
-    return: exiting_dir (unit) array[ix,iy]:
-    """
-    model = read(filename)
-    model.optimize()
-    print("Objective:", model.objVal)
-
-    # transfer the solution (path form) into unit dir
-
-    # for i in model.getVars():
-    #     print("Parameter:", i.varname, "=", i.x)
-    #     index = int(i.varname[1:])
-    #     dirs[index] = i.x
-
-    exiting_dir = np.array([ix, iy])
-    return exiting_dir

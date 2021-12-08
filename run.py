@@ -14,6 +14,7 @@ from gurobipy import *
 from helper import intensity_cal as inten_cal
 from helper import *
 from tqdm import tqdm
+from dijkstra import DIJKSTRA
 
 
 def main():
@@ -57,12 +58,14 @@ def main():
 
     # 2)
     po_graph.read_net(args)
-    po_graph.printNetwork()
     print(np.shape(po_graph.network_matrix))
+    dijkstra = DIJKSTRA(po_graph)
     # dirs = {}
-    # for node in range(len(po_graph.nodes)):
-    #     write_lp_3(args.filename_3, po_graph, node, args)
-    #     dirs[node] = optimize_lp_3(args.filename_3, po_graph)
+    # Problem: give each point in network a exiting direction
+    for net_node in range(len(po_graph.network_nodes)):
+        dijkstra_path = dijkstra.
+        po_graph.printNetwork(dijkstra_path)
+         # dirs[net_node] =
     # np.save(args.filename_3_result, dirs)
 
     # # Second step: activate the necessary signage
@@ -262,32 +265,6 @@ def write_lp_2(po_graph, args):
 
     # write in
     m.write(filename=args.filename_2)
-
-
-def write_lp_3(file, po_graph, node, args):
-    """
-    network modeling problem with a shortest path problem given the node
-    generate the path of the shortest exiting given the exiting network
-    for the given node
-    return: the .lp file
-    """
-    m = Model("C")
-
-    # variables:
-    # num_node = len(po_graph.nodes)
-    # x_name = []
-    # variables = {}
-    # for xi in x_name:
-    #     variables[xi] = m.addVar(vtype=GRB.BINARY, name=xi)
-    # m.update()
-
-    # objective:
-    # m.setObjective(, GRB.MINIMIZE)
-
-    # constraints:
-
-    # write in
-    m.write(filename=file)
 
 
 if __name__ == '__main__':

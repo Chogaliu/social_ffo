@@ -108,7 +108,7 @@ class PO_GRAPH:
         # 1.3)
         poten_nodes = get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info)
         # 2.
-        nodes_links_matrix, feasible_nodes = get_net_links(obs_info, exit_info, poten_nodes)
+        nodes_links_matrix, feasible_nodes = get_net_links(obs_info, poten_nodes)
 
         self.network_nodes = feasible_nodes
         self.network_matrix = nodes_links_matrix
@@ -377,11 +377,12 @@ class PO_GRAPH:
         plt.savefig('figure_field{}.png'.format(time.time()))
         # plt.show()
 
-    def printNetwork(self, net_show=True):
+    def printNetwork(self, net_show=False, dijkstra_path):
         """
         Print function for the network (nodes-links matrix)
         For debugging proposes (visualize)
         net_show: if the network is shown
+        dijkstra: display the dijkstra result
         """
         fig, ax = plt.subplots()
         obs_info = self.obs_info
@@ -399,9 +400,11 @@ class PO_GRAPH:
                                      color='black', alpha=0.5)
             ax.add_patch(rect)
 
-        # nodes-links print with network_matrix
+        # nodes print
+        plt.scatter(network_nodes[:, 0], network_nodes[:, 1], marker='o', s=10, c='orange', alpha=1)
+
+        # links print with network_matrix
         if net_show:
-            plt.scatter(network_nodes[:, 0], network_nodes[:, 1], marker='o', s=10, c='orange', alpha=1)
             for n in tqdm(range(num_net_node - 1)):
                 for n_temp in range(n - 1, num_net_node):
                     if network_matrix[n, n_temp] == 0:
@@ -409,6 +412,10 @@ class PO_GRAPH:
                     link_x = [network_nodes[n][0], network_nodes[n_temp][0]]
                     link_y = [network_nodes[n][1], network_nodes[n_temp][1]]
                     plt.plot(link_x, link_y, color='k', linewidth=1, alpha=0.2)
+
+        if dijkstra_path:
+            plt.plot(dijkstra_path[:,0], dijkstra_path[:,1], color='b')
+
 
         x_major_locator = MultipleLocator(1)
         y_major_locator = MultipleLocator(1)
