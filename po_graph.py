@@ -88,7 +88,7 @@ class PO_GRAPH:
         1) generate all links between nodes
         2) if feasible (no intersection with obstacle)
         3) record all the feasible links and feasible nodes
-        4) generate the nodes-links matrix 0/1
+        3. generate the nodes-links matrix 0/1
         return: nodes-links matrix n-n:0/1 & feasible_nodes [x,y]
         """
         # 1.1)

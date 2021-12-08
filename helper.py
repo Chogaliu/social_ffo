@@ -250,18 +250,26 @@ def get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info):
     input pooled obs_nodes_with_id array [id,x,y] generated from pooling
     generate the middle point for each nodes pair
     (nodes pairs are not allowed within the same obstacle or intersection with obstacles)
-    (nodes pairs only generated from the node with one obstacle id)
+    (nodes pairs only generated from/with the node with one obstacle id)
     return: potential nodes for network [x,y]
     """
     size_ = np.shape(pooled_nodes_with_id)[0]
     poten_net_nodes = []
     appeared = []
     for i in range(size_ - 1):
-        if len(pooled_nodes_ids[i]) > 1:
-            continue
-        for j in range(i + 1, size_):
-            if len(pooled_nodes_ids[j]) > 1:
+
+        # # alter 1:  57*57
+        # if len(pooled_nodes_ids[i]) > 1:
+        #     continue
+        # for j in range(i + 1, size_):
+        #     if len(pooled_nodes_ids[j]) > 1:
+        #         continue
+
+        # alter 2:  135*135
+        for j in range(i+1,size_):
+            if 1 not in [len(pooled_nodes_ids[i]),len(pooled_nodes_ids[j])]:
                 continue
+
             if list(set(pooled_nodes_ids[i]) & set(pooled_nodes_ids[j])):
                 continue
             if str(pooled_nodes_ids[i])+';'+str(pooled_nodes_ids[j]) in appeared or \
@@ -275,6 +283,7 @@ def get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info):
             if check_intersection_state(obs_info_temp, node_i, node_j):
                 continue
             mid_point = (node_i + node_j) / 2
+            # Problem remain: overlap with obstacle
             poten_net_nodes.append(mid_point)
     return np.array(poten_net_nodes)
 
