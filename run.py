@@ -61,9 +61,9 @@ def main():
     print(np.shape(po_graph.network_matrix))
     dijkstra = DIJKSTRA(po_graph)
     # dirs = {}
-    # Problem: give each point in network a exiting direction
-    for net_node in range(len(po_graph.network_nodes)):
-        dijkstra_path = dijkstra.
+    # Problem: give each point in network a optimistic exiting direction
+    for net_node_idx in range(len(po_graph.network_nodes)):
+        dijkstra_path = dijkstra.cal_shortest(net_node_idx)
         po_graph.printNetwork(dijkstra_path)
          # dirs[net_node] =
     # np.save(args.filename_3_result, dirs)

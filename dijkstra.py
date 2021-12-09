@@ -1,8 +1,7 @@
 """
-Reference:https://blog.csdn.net/weixin_40159138/article/details/90693581
+Reference: https://blog.csdn.net/Yuan52007298/article/details/80180839
 """
 import numpy as np
-
 from helper import check_intersection_state
 
 
@@ -15,75 +14,79 @@ class DIJKSTRA:
         self.matrix = po_graph.network_matrix
         self.nodes = po_graph.network_nodes
         self.exit_info = po_graph.exit_info
-        self.obs_info = po_graph.obs_info
-        # generate the cost with nodes
-        num_nodes = len(self.nodes)
-        self.graph = {}
+
+        # generate the cost with nodes(including exits) - graph
+        self.num_nodes = len(self.nodes)
+        num_nodes = self.num_nodes
+        self.num_exits = len(self.exit_info)
+        num_exits = self.num_exits
+        self.num = self.num_nodes + self.num_exits
+        _ = float('inf')
+        graph = _ * np.ones((self.num, self.num))
         for i in range(num_nodes - 1):
             for j in range(i + 1, num_nodes):
                 if self.matrix[i, j] == 1:
                     dis = np.linalg.norm(self.nodes[i] - self.nodes[j])
-                    graph["i"]["j"] = dis
-                    graph["j"]["i"] = dis
+                    graph[i, j] = dis
+                    graph[j, i] = dis
+        for i in range(num_nodes):
+            for e in range(num_exits):
+                if not check_intersection_state(po_graph.obs_info, self.nodes[i], self.exit_info[e, 1:3]):
+                    dis = np.linalg.norm(self.nodes[i] - self.exit_info[e, 1:3])
+                    graph[i][num_nodes + e] = dis
+        self.graph = graph
 
-
-    def dijkstra_run():
-        # adding node and the corresponding (feasible) links into the graph
-        node = find_lowest_cost_node(costs)  # 在未处理的节点中找到开销最小的节点
-        while node is not None:  # 所有节点都被处理过，node为None，循环结束
-            cost = costs[node]
-            neighbors = graph[node]
-            for n in neighbors.keys():  # 遍历当前节点的所有邻居
-                new_cost = cost + neighbors[n]
-                if costs[n] > new_cost:  # 如果经当前节点前往该邻居更近
-                    costs[n] = new_cost  # 就更新该邻居的开销
-                    parents[n] = node  # 同时将该邻居的父节点设置为当前节点
-            processed.append(node)  # 将当前节点标记为处理过
-            node = find_lowest_cost_node(costs)  # 找出接下来要处理的节点，并循环
-        shortest_path = find_shortest_path()
-        print(shortest_path)
-
-
-graph["exit_1"] = {}
-graph["exit_1"] = {}
-graph["exit_1"] = {}
-
-# 创建开销/时间表
-infinity = float("inf")  # 无穷大
-costs = {}
-costs["a"] = 6
-costs["b"] = 2
-costs["fin"] = infinity  # 暂时将通往终点的时间，定义为无穷大
-
-# 路径中父节点信息
-parents = {}
-parents["a"] = "start"
-parents["b"] = "start"
-parents["fin"] = None
-
-# 记录处理过的节点的数组
-processed = []
-
-
-# 定义寻找最小节点的函数
-def find_lowest_cost_node(costs):
-    lowest_cost = float("inf")
-    lowest_cost_node = None
-    for node in costs:  # 遍历所有节点
-        cost = costs[node]
-        if cost < lowest_cost and node not in processed:  # 如果当前节点的开销更低且未处理过
-            lowest_cost = cost
-            lowest_cost_node = node
-    return lowest_cost_node
-
-
-# 寻找最短路径
-def find_shortest_path():
-    node = "fin"
-    shortest_path = ["fin"]
-    while parents[node] != "start":
-        shortest_path.append(parents[node])
-        node = parents[node]
-    shortest_path.append("start")
-    shortest_path.reverse()  # 将从终点到起点的路径反序表示
-    return shortest_path
+    def cal_shortest(self, net_node_idx):
+        """
+        points点个数，edges边个数,graph路径连通图,start七点,end终点
+        def Dijkstra(points, edges, graph, start, end):
+        """
+        _ = float('inf')
+        points = self.num
+        pre = [0] * (points + 1)  # 记录前驱
+        vis = [0] * (points + 1)  # 记录节点遍历状态
+        dis = [_ for i in range(points + 1)]  # 保存最短距离
+        map = self.graph
+        start = net_node_idx
+        for i in range(points + 1):  # 初始化起点到其他点的距离
+            if i == start:
+                dis[i] = 0
+            else:
+                dis[i] = map[start][i]
+            if map[start][i] != _:
+                pre[i] = start
+            else:
+                pre[i] = -1
+        vis[start] = 1
+        for i in range(points + 1):  # 每循环一次确定一条最短路
+            min = _
+            for j in range(points + 1):  # 寻找当前最短路
+                if vis[j] == 0 and dis[j] < min:
+                    t = j
+                    min = dis[j]
+            vis[t] = 1  # 找到最短的一条路径 ,标记
+            for j in range(points + 1):
+                if vis[j] == 0 and dis[j] > dis[t] + map[t][j]:
+                    dis[j] = dis[t] + map[t][j]
+                    pre[j] = t
+        record_exit_dist = []
+        record_exit_roads = []
+        for end in range(self.num_nodes + 1, self.num):
+            road = [0] * (points + 1)  # 保存最短路径
+            roads = []
+            p = end
+            len = 0
+            while p >= 1 and len < points:
+                road[len] = p
+                p = pre[p]
+                len += 1
+            mark = 0
+            len -= 1
+            while len >= 0:
+                roads.append(road[len])
+                len -= 1
+            record_exit_dist.append(dis[end])
+            record_exit_roads.append(roads)
+        min_dist = min(record_exit_dist)
+        idx = record_exit_dist.index(min_dist)
+        return record_exit_roads[idx]
