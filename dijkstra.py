@@ -1,7 +1,7 @@
 """
 Reference: https://blog.csdn.net/Yuan52007298/article/details/80180839
 Construct Dijkstra problem
-return shortest_paths for network_nodes {node}=[path]
+return shortest_paths, dirs for network_nodes {node}=[path]
 
 Author: Qiujia Liu
 Data: 9th Dec 2021
@@ -21,6 +21,7 @@ class DIJKSTRA:
         self.nodes = po_graph.network_nodes
         self.exit_info = po_graph.exit_info
         self.dijkstra_paths = {}
+        self.dirs = {}
 
         # generate the cost with nodes(including exits) - graph
         num_nodes = len(self.nodes)
@@ -48,7 +49,8 @@ class DIJKSTRA:
         """
         generate the minimum path to the exit (of given exits) with the given start point
         return:
-        path: list
+        paths: [list] for each net_node
+        dirs: [dir_array] for each net_node
         """
         _ = float('inf')
         points = len(self.net_nodes)
@@ -98,4 +100,8 @@ class DIJKSTRA:
                 record_exit_roads.append(roads)
             dist_list = [int(i) for i in record_exit_dist]
             idx = dist_list.index(min(dist_list))
-            self.dijkstra_paths[net_node_idx] = record_exit_roads[idx]
+            self.dijkstra_paths[start] = record_exit_roads[idx]
+            current_loc = self.nodes[start]
+            next_loc = self.net_nodes[self.dijkstra_paths[start][1]]
+            direction = next_loc-current_loc
+            self.dirs[start] = direction/np.linalg.norm(direction)

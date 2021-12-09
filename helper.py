@@ -88,23 +88,48 @@ def get_utility(angle, e):
     return u
 
 
-def find_the_fittest_exit(po_graph):
+# def find_the_fittest_exit(po_graph):
+#     """
+#     through exit_info and node_info find the fittest exit at the current state for each node
+#     principle: THE CLOSEST ONE
+#     return: fittest_exit
+#     fittest_exit {node_id}=exit_id
+#     """
+#     fittest_exit = {}
+#     exit_info = po_graph.exit_info
+#     for node_id in range(len(po_graph.nodes)):
+#         dis = [np.linalg.norm(
+#             np.array(exit_info[exit_id][1:3]) - np.array([po_graph.nodes[node_id].x, po_graph.nodes[node_id].y])) for
+#             exit_id in
+#             range(len(exit_info))]
+#         fitting_exit_id = dis.index(min(dis))
+#         fittest_exit[node_id] = fitting_exit_id
+#     return fittest_exit
+
+def find_the_fittest_dirs(po_graph):
     """
-    through exit_info and node_info find the fittest exit at the current state for each node
-    principle: THE CLOSEST ONE
-    return: fittest_exit
-    fittest_exit {node_id}=exit_id
+    through dirs and obs_info find the fittest exit at the current state for each node
+    principle: according to dir of the closest network_node
+    return: exiting_dirs {node_id}=dir_i
     """
-    fittest_exit = {}
-    exit_info = po_graph.exit_info
+    dirs = po_graph.dirs
+    network_nodes = po_graph.network_nodes
+    exiting_i_dirs = {}
     for node_id in range(len(po_graph.nodes)):
-        dis = [np.linalg.norm(
-            np.array(exit_info[exit_id][1:3]) - np.array([po_graph.nodes[node_id].x, po_graph.nodes[node_id].y])) for
-            exit_id in
-            range(len(exit_info))]
-        fitting_exit_id = dis.index(min(dis))
-        fittest_exit[node_id] = fitting_exit_id
-    return fittest_exit
+        node_loc = np.array(po_graph.nodes[node_id].x, po_graph.nodes[node_id].y)
+        dist_min = float('inf')
+        node_min = 'zero'
+        for net_node_id in range(len(network_nodes)):
+            net_node_loc = network_nodes[net_node_id]
+            dist = np.linalg.norm(net_node_loc-node_loc)
+            if dist < dist_min:
+                if check_intersection_state(po_graph.obs_info, node_loc, net_node_loc):
+                    continue
+                dist_min = dist
+                node_min = net_node_id
+        exiting_i_dir = dirs[node_min]
+        exiting_i_dirs[node_id] = exiting_i_dir
+    return exiting_i_dirs
 
 
 class Point(object):
@@ -266,14 +291,14 @@ def get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info):
         #         continue
 
         # alter 2:  135*135
-        for j in range(i+1,size_):
-            if 1 not in [len(pooled_nodes_ids[i]),len(pooled_nodes_ids[j])]:
+        for j in range(i + 1, size_):
+            if 1 not in [len(pooled_nodes_ids[i]), len(pooled_nodes_ids[j])]:
                 continue
 
             if list(set(pooled_nodes_ids[i]) & set(pooled_nodes_ids[j])):
                 continue
-            if str(pooled_nodes_ids[i])+';'+str(pooled_nodes_ids[j]) in appeared or \
-                    str(pooled_nodes_ids[j])+';'+str(pooled_nodes_ids[i]) in appeared:
+            if str(pooled_nodes_ids[i]) + ';' + str(pooled_nodes_ids[j]) in appeared or \
+                    str(pooled_nodes_ids[j]) + ';' + str(pooled_nodes_ids[i]) in appeared:
                 continue
             appeared.append(str(pooled_nodes_ids[i]) + ';' + str(pooled_nodes_ids[j]))
             node_i = pooled_nodes_with_id[i][1:3]

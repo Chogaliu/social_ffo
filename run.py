@@ -51,20 +51,17 @@ def main():
     # (2): generate the exiting_dir
     po_graph = initialize(args)
 
-    # # 1)
-    # write_lp_1(po_graph, args)
-    # optimize_lp_1(po_graph, args)
-    # po_graph.printGraph()
+    # 1)
+    write_lp_1(po_graph, args)
+    optimize_lp_1(po_graph, args)
+    po_graph.printGraph()
 
-    # 2)
-    po_graph.read_net(args)
-    print(np.shape(po_graph.network_matrix))
-    dijkstra = DIJKSTRA(po_graph)
-    # Problem: give each point in network a optimistic exiting direction
-    po_graph.printNetwork(net_show=False, dijkstra=dijkstra, dijkstra_path_only=False)
-    # dirs[net_node] =
-    # dirs = {}
-    # np.save(args.filename_3_result, dirs)
+    # # 2)
+    # po_graph.read_net(args)
+    # print(np.shape(po_graph.network_matrix))
+    # dijkstra = DIJKSTRA(po_graph)
+    # po_graph.printNetwork(net_show=False, dijkstra=dijkstra, dijkstra_path_only=False)
+    # np.save(args.filename_3_result, dijkstra.dirs)
 
     # # Second step: activate the necessary signage
     # po_graph = initialize(args)
@@ -212,13 +209,10 @@ def write_lp_2(po_graph, args):
     m.setObjective(sum(variables[ui] for ui in u_name), GRB.MAXIMIZE)
 
     # constraints
-    fittest_exit = find_the_fittest_exit(po_graph)
+    exiting_i_dirs = find_the_fittest_dirs(po_graph)
     for node in range(num_node):
-        exit_loc = np.array(po_graph.exit_info[fittest_exit[node]][1:3])
-        node_loc = np.array([po_graph.nodes[node].x, po_graph.nodes[node].y])
         current_i_dir = np.array([po_graph.nodes[node].e_ix, po_graph.nodes[node].e_iy])
-        # Problem: exiting_i_dir according to path planning
-        exiting_i_dir = (exit_loc - node_loc) / np.linalg.norm(exit_loc - node_loc)
+        exiting_i_dir = exiting_i_dirs[node]
 
         for sign in influ_signs_for_n[node]:
             sign_activate = sum(variables['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right'])

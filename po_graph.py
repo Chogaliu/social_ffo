@@ -47,7 +47,7 @@ class PO_GRAPH:
         self.sign_activate = 0  # dict
         self.sign_loc_info = 0  # dict
         self.dist_matrix_ns = 0  # array
-        self.dirs = 0  # array
+        self.dirs = 0  # dict
         self.network_matrix = 0  # array
         self.network_nodes = 0  # array
         self.grid_size = self.wid * self.len
