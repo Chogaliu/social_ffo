@@ -11,18 +11,18 @@ class DIJKSTRA:
     """
 
     def __init__(self, po_graph):
+        # generate the network_nodes (including exits) and matrix with distance
         self.matrix = po_graph.network_matrix
         self.nodes = po_graph.network_nodes
         self.exit_info = po_graph.exit_info
 
         # generate the cost with nodes(including exits) - graph
-        self.num_nodes = len(self.nodes)
-        num_nodes = self.num_nodes
-        self.num_exits = len(self.exit_info)
-        num_exits = self.num_exits
-        self.num = self.num_nodes + self.num_exits
+        num_nodes = len(self.nodes)
+        num_exits = len(self.exit_info)
+        self.net_nodes = np.vstack((self.nodes, self.exit_info[:, 1:3]))
+        num = len(self.net_nodes)
         _ = float('inf')
-        graph = _ * np.ones((self.num, self.num))
+        graph = _ * np.ones((num, num))
         for i in range(num_nodes - 1):
             for j in range(i + 1, num_nodes):
                 if self.matrix[i, j] == 1:
@@ -38,17 +38,18 @@ class DIJKSTRA:
 
     def cal_shortest(self, net_node_idx):
         """
-        points点个数，edges边个数,graph路径连通图,start七点,end终点
-        def Dijkstra(points, edges, graph, start, end):
+        generate the minimum path to the exit (of given exits) with the given start point
+        return:
+        path: list
         """
         _ = float('inf')
-        points = self.num
-        pre = [0] * points  # 记录前驱
-        vis = [0] * points  # 记录节点遍历状态
-        dis = [_ for i in range(points)]  # 保存最短距离
+        points = len(self.net_nodes)
+        pre = [0] * points
+        vis = [0] * points
+        dis = [_ for i in range(points)]
         map = self.graph
         start = net_node_idx
-        for i in range(points):  # 初始化起点到其他点的距离
+        for i in range(points):
             if i == start:
                 dis[i] = 0
             else:
@@ -58,35 +59,35 @@ class DIJKSTRA:
             else:
                 pre[i] = -1
         vis[start] = 1
-        for i in range(points):  # 每循环一次确定一条最短路
-            min = _
-            for j in range(points):  # 寻找当前最短路
-                if vis[j] == 0 and dis[j] < min:
+        for i in range(points):
+            min_dist = _
+            for j in range(points):
+                if vis[j] == 0 and dis[j] < min_dist:
                     t = j
-                    min = dis[j]
-            vis[t] = 1  # 找到最短的一条路径 ,标记
+                    min_dist = dis[j]
+            vis[t] = 1
             for j in range(points):
                 if vis[j] == 0 and dis[j] > dis[t] + map[t][j]:
                     dis[j] = dis[t] + map[t][j]
                     pre[j] = t
         record_exit_dist = []
         record_exit_roads = []
-        for end in range(self.num_nodes, self.num):
-            road = [0] * points  # 保存最短路径
+        for end in range(len(self.nodes), points):
+            road = [0] * points
             roads = []
             p = end
-            len = 0
-            while p >= 1 and len < points:
-                road[len] = p
+            l_en = 0
+            while p >= 1 and l_en < points:
+                road[l_en] = p
                 p = pre[p]
-                len += 1
+                l_en += 1
             mark = 0
-            len -= 1
-            while len >= 0:
-                roads.append(road[len])
-                len -= 1
+            l_en -= 1
+            while l_en >= 0:
+                roads.append(road[l_en])
+                l_en -= 1
             record_exit_dist.append(dis[end])
             record_exit_roads.append(roads)
-        int_list = [int(i) for i in record_exit_dist]
-        idx = int_list.index(min(int_list))
+        dist_list = [int(i) for i in record_exit_dist]
+        idx = dist_list.index(min(dist_list))
         return record_exit_roads[idx]

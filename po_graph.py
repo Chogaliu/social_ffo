@@ -377,7 +377,7 @@ class PO_GRAPH:
         plt.savefig('figure_field{}.png'.format(time.time()))
         # plt.show()
 
-    def printNetwork(self, net_show=False, dijkstra_path=False):
+    def printNetwork(self, net_show=False, dijkstra=False, dijkstra_path=False):
         """
         Print function for the network (nodes-links matrix)
         For debugging proposes (visualize)
@@ -401,7 +401,7 @@ class PO_GRAPH:
             ax.add_patch(rect)
 
         # nodes print
-        plt.scatter(network_nodes[:, 0], network_nodes[:, 1], marker='o', s=10, c='orange', alpha=1)
+        plt.scatter(network_nodes[:, 0], network_nodes[:, 1], marker='o', s=4, c='orange', alpha=0.5)
 
         # links print with network_matrix
         if net_show:
@@ -415,11 +415,10 @@ class PO_GRAPH:
 
         if dijkstra_path:
             n = len(dijkstra_path)
-            path = np.array((n, 2))
+            path = np.zeros((n,2))
             for i in range(n):
-                path[i] = self.network_nodes[dijkstra_path[i]]
-            plt.plot(path[:, 0], path[:, 1], color='b')
-
+                path[i] = dijkstra.net_nodes[dijkstra_path[i]]
+            plt.plot(path[:, 0], path[:, 1], color='b', linewidth=4)
         x_major_locator = MultipleLocator(1)
         y_major_locator = MultipleLocator(1)
         ax1 = plt.gca()
