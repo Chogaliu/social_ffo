@@ -43,12 +43,12 @@ class DIJKSTRA:
         """
         _ = float('inf')
         points = self.num
-        pre = [0] * (points + 1)  # 记录前驱
-        vis = [0] * (points + 1)  # 记录节点遍历状态
-        dis = [_ for i in range(points + 1)]  # 保存最短距离
+        pre = [0] * points  # 记录前驱
+        vis = [0] * points  # 记录节点遍历状态
+        dis = [_ for i in range(points)]  # 保存最短距离
         map = self.graph
         start = net_node_idx
-        for i in range(points + 1):  # 初始化起点到其他点的距离
+        for i in range(points):  # 初始化起点到其他点的距离
             if i == start:
                 dis[i] = 0
             else:
@@ -58,21 +58,21 @@ class DIJKSTRA:
             else:
                 pre[i] = -1
         vis[start] = 1
-        for i in range(points + 1):  # 每循环一次确定一条最短路
+        for i in range(points):  # 每循环一次确定一条最短路
             min = _
-            for j in range(points + 1):  # 寻找当前最短路
+            for j in range(points):  # 寻找当前最短路
                 if vis[j] == 0 and dis[j] < min:
                     t = j
                     min = dis[j]
             vis[t] = 1  # 找到最短的一条路径 ,标记
-            for j in range(points + 1):
+            for j in range(points):
                 if vis[j] == 0 and dis[j] > dis[t] + map[t][j]:
                     dis[j] = dis[t] + map[t][j]
                     pre[j] = t
         record_exit_dist = []
         record_exit_roads = []
-        for end in range(self.num_nodes + 1, self.num):
-            road = [0] * (points + 1)  # 保存最短路径
+        for end in range(self.num_nodes, self.num):
+            road = [0] * points  # 保存最短路径
             roads = []
             p = end
             len = 0
@@ -87,6 +87,6 @@ class DIJKSTRA:
                 len -= 1
             record_exit_dist.append(dis[end])
             record_exit_roads.append(roads)
-        min_dist = min(record_exit_dist)
-        idx = record_exit_dist.index(min_dist)
+        int_list = [int(i) for i in record_exit_dist]
+        idx = int_list.index(min(int_list))
         return record_exit_roads[idx]
