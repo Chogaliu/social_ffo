@@ -69,9 +69,11 @@ class PO_GRAPH:
         sign_loc_info = np.load(args.filename_1_result, allow_pickle=True).item()
         dist_matrix_ns = np.load(args.filename_1_result_2, allow_pickle=True)
         dirs = np.load(args.filename_3_result, allow_pickle=True).item()
+        network_nodes = np.load(args.filename_3_result_2, allow_pickle=True)
         self.sign_loc_info = sign_loc_info
         self.dist_matrix_ns = dist_matrix_ns
         self.dirs = dirs
+        self.network_nodes = network_nodes
         if activate:
             sign_activate = np.load(args.filename_2_result, allow_pickle=True).item()
             self.sign_activate = sign_activate
@@ -93,7 +95,6 @@ class PO_GRAPH:
         """
         # 1.1)
         obs_info = self.obs_info
-        exit_info = self.exit_info
         obs_nodes = []  # list
         for obs_idx in range(len(obs_info)):
             x, y = obs_info[obs_idx][1:3]
@@ -108,7 +109,7 @@ class PO_GRAPH:
         # 1.3)
         poten_nodes = get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info)
         # 2.
-        nodes_links_matrix, feasible_nodes = get_net_links(obs_info, poten_nodes)
+        nodes_links_matrix, feasible_nodes = get_net_links(obs_info, poten_nodes, args)
 
         self.network_nodes = feasible_nodes
         self.network_matrix = nodes_links_matrix

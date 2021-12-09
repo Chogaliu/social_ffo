@@ -15,7 +15,7 @@ class DIJKSTRA:
     To define the dijkstra problem
     """
 
-    def __init__(self, po_graph):
+    def __init__(self, po_graph, args):
         # generate the network_nodes (including exits) and matrix with distance
         self.matrix = po_graph.network_matrix
         self.nodes = po_graph.network_nodes
@@ -44,6 +44,7 @@ class DIJKSTRA:
                     graph[i][num_nodes + e] = dis
         self.graph = graph
         self.cal_shortest()
+        np.save(args.filename_3_result, self.dirs)
 
     def cal_shortest(self):
         """

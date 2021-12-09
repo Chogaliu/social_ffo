@@ -44,34 +44,32 @@ def main():
     parser.add_argument('--filename_1_result_2', type=str, default="tests/result-1-2.npy")
     parser.add_argument('--filename_2_result', type=str, default="tests/result-2.npy")
     parser.add_argument('--filename_3_result', type=str, default="tests/result-3.npy")
+    parser.add_argument('--filename_3_result_2', type=str, default="tests/result-3-2.npy")
     args = parser.parse_args()
 
-    # First step:
-    # (1) generate the possible locations of signage
-    # (2): generate the exiting_dir
-    po_graph = initialize(args)
-
-    # 1)
-    write_lp_1(po_graph, args)
-    optimize_lp_1(po_graph, args)
-    po_graph.printGraph()
-
+    # # First step:
+    # # (1) generate the possible locations of signage
+    # # (2): generate the exiting_dir
+    # po_graph = initialize(args)
+    # # 1)
+    # write_lp_1(po_graph, args)
+    # optimize_lp_1(po_graph, args)
+    # po_graph.printGraph()
     # # 2)
     # po_graph.read_net(args)
     # print(np.shape(po_graph.network_matrix))
-    # dijkstra = DIJKSTRA(po_graph)
+    # dijkstra = DIJKSTRA(po_graph, args)
     # po_graph.printNetwork(net_show=False, dijkstra=dijkstra, dijkstra_path_only=False)
-    # np.save(args.filename_3_result, dijkstra.dirs)
 
-    # # Second step: activate the necessary signage
-    # po_graph = initialize(args)
-    # po_graph.read_pre_results(args)
-    # write_lp_2(po_graph, args)
-    # optimize_lp_2(po_graph, args)
+    # Second step: activate the necessary signage
+    po_graph = initialize(args)
+    po_graph.read_pre_results(args)
+    write_lp_2(po_graph, args)
+    optimize_lp_2(po_graph, args)
+    po_graph.printGraph()
+    # update the e on the po_graph
+    # po_graph.read_SigntoField(args.k, args.sign_q)
     # po_graph.printGraph()
-    # # update the e on the po_graph
-    # # po_graph.read_SigntoField(args.k, args.sign_q)
-    # # po_graph.printGraph()
 
 
 def initialize(args):

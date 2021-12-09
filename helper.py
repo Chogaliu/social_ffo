@@ -116,7 +116,7 @@ def find_the_fittest_dirs(po_graph):
     network_nodes = po_graph.network_nodes
     exiting_i_dirs = {}
     for node_id in range(len(po_graph.nodes)):
-        node_loc = np.array(po_graph.nodes[node_id].x, po_graph.nodes[node_id].y)
+        node_loc = np.array([po_graph.nodes[node_id].x, po_graph.nodes[node_id].y])
         dist_min = float('inf')
         node_min = 'zero'
         for net_node_id in range(len(network_nodes)):
@@ -313,7 +313,7 @@ def get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info):
     return np.array(poten_net_nodes)
 
 
-def get_net_links(obs_info, poten_net_nodes):
+def get_net_links(obs_info, poten_net_nodes, args):
     """
     poten_net_nodes: array
     obs_info: array
@@ -342,6 +342,7 @@ def get_net_links(obs_info, poten_net_nodes):
     matrix_temp = np.delete(matrix_temp, dele_, axis=0)
     matrix = np.delete(matrix_temp, dele_, axis=1)
     nodes = np.delete(poten_net_nodes, dele_, axis=0)
+    np.save(args.filename_3_result_2, nodes)
     return matrix, nodes
 
 
