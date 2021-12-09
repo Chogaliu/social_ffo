@@ -15,6 +15,7 @@ class DIJKSTRA:
         self.matrix = po_graph.network_matrix
         self.nodes = po_graph.network_nodes
         self.exit_info = po_graph.exit_info
+        self.dijkstra_paths = {}
 
         # generate the cost with nodes(including exits) - graph
         num_nodes = len(self.nodes)
@@ -36,7 +37,7 @@ class DIJKSTRA:
                     graph[i][num_nodes + e] = dis
         self.graph = graph
 
-    def cal_shortest(self, net_node_idx):
+    def cal_shortest(self):
         """
         generate the minimum path to the exit (of given exits) with the given start point
         return:
@@ -44,50 +45,52 @@ class DIJKSTRA:
         """
         _ = float('inf')
         points = len(self.net_nodes)
-        pre = [0] * points
-        vis = [0] * points
-        dis = [_ for i in range(points)]
         map = self.graph
-        start = net_node_idx
-        for i in range(points):
-            if i == start:
-                dis[i] = 0
-            else:
-                dis[i] = map[start][i]
-            if map[start][i] != _:
-                pre[i] = start
-            else:
-                pre[i] = -1
-        vis[start] = 1
-        for i in range(points):
-            min_dist = _
-            for j in range(points):
-                if vis[j] == 0 and dis[j] < min_dist:
-                    t = j
-                    min_dist = dis[j]
-            vis[t] = 1
-            for j in range(points):
-                if vis[j] == 0 and dis[j] > dis[t] + map[t][j]:
-                    dis[j] = dis[t] + map[t][j]
-                    pre[j] = t
-        record_exit_dist = []
-        record_exit_roads = []
-        for end in range(len(self.nodes), points):
-            road = [0] * points
-            roads = []
-            p = end
-            l_en = 0
-            while p >= 1 and l_en < points:
-                road[l_en] = p
-                p = pre[p]
-                l_en += 1
-            mark = 0
-            l_en -= 1
-            while l_en >= 0:
-                roads.append(road[l_en])
+        for net_node_idx in range(len(self.nodes)):
+            pre = [0] * points
+            vis = [0] * points
+            dis = [_ for i in range(points)]
+            start = net_node_idx
+            for i in range(points):
+                if i == start:
+                    dis[i] = 0
+                else:
+                    dis[i] = map[start][i]
+                if map[start][i] != _:
+                    pre[i] = start
+                else:
+                    pre[i] = -1
+            vis[start] = 1
+            for i in range(points):
+                min_dist = _
+                for j in range(points):
+                    if vis[j] == 0 and dis[j] < min_dist:
+                        t = j
+                        min_dist = dis[j]
+                vis[t] = 1
+                for j in range(points):
+                    if vis[j] == 0 and dis[j] > dis[t] + map[t][j]:
+                        dis[j] = dis[t] + map[t][j]
+                        pre[j] = t
+            record_exit_dist = []
+            record_exit_roads = []
+            for end in range(len(self.nodes), points):
+                road = [0] * points
+                roads = []
+                p = end
+                l_en = 0
+                while p >= 1 and l_en < points:
+                    road[l_en] = p
+                    p = pre[p]
+                    l_en += 1
+                mark = 0
                 l_en -= 1
-            record_exit_dist.append(dis[end])
-            record_exit_roads.append(roads)
-        dist_list = [int(i) for i in record_exit_dist]
-        idx = dist_list.index(min(dist_list))
-        return record_exit_roads[idx]
+                while l_en >= 0:
+                    roads.append(road[l_en])
+                    l_en -= 1
+                record_exit_dist.append(dis[end])
+                record_exit_roads.append(roads)
+            dist_list = [int(i) for i in record_exit_dist]
+            idx = dist_list.index(min(dist_list))
+            self.dijkstra_paths[net_node_idx] = record_exit_roads[idx]
+        return self.dijkstra_paths
