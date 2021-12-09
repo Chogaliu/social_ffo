@@ -83,7 +83,6 @@ class DIJKSTRA:
                     road[l_en] = p
                     p = pre[p]
                     l_en += 1
-                mark = 0
                 l_en -= 1
                 while l_en >= 0:
                     roads.append(road[l_en])
