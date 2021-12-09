@@ -420,14 +420,14 @@ class PO_GRAPH:
                 path = np.zeros((length, 2))
                 for i in range(length):
                     path[i] = dijkstra.net_nodes[dijkstra_path[i]]
-                plt.plot(path[:, 0], path[:, 1], color='b', linewidth=4)
+                plt.plot(path[:, 0], path[:, 1], color='b', linewidth=1)
 
         if dijkstra_path_only:
             n = len(dijkstra_path_only)
             path = np.zeros((n, 2))
             for i in range(n):
                 path[i] = dijkstra.net_nodes[dijkstra_path_only[i]]
-            plt.plot(path[:, 0], path[:, 1], color='b', linewidth=4)
+            plt.plot(path[:, 0], path[:, 1], color='b', linewidth=1)
         x_major_locator = MultipleLocator(1)
         y_major_locator = MultipleLocator(1)
         ax1 = plt.gca()

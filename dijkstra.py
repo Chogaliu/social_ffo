@@ -1,5 +1,10 @@
 """
 Reference: https://blog.csdn.net/Yuan52007298/article/details/80180839
+Construct Dijkstra problem
+return shortest_paths for network_nodes {node}=[path]
+
+Author: Qiujia Liu
+Data: 9th Dec 2021
 """
 import numpy as np
 from helper import check_intersection_state
@@ -37,6 +42,7 @@ class DIJKSTRA:
                     dis = np.linalg.norm(self.nodes[i] - self.exit_info[e, 1:3])
                     graph[i][num_nodes + e] = dis
         self.graph = graph
+        self.cal_shortest()
 
     def cal_shortest(self):
         """
@@ -93,4 +99,3 @@ class DIJKSTRA:
             dist_list = [int(i) for i in record_exit_dist]
             idx = dist_list.index(min(dist_list))
             self.dijkstra_paths[net_node_idx] = record_exit_roads[idx]
-        return self.dijkstra_paths

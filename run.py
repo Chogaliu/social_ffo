@@ -60,11 +60,10 @@ def main():
     po_graph.read_net(args)
     print(np.shape(po_graph.network_matrix))
     dijkstra = DIJKSTRA(po_graph)
-    # dirs = {}
     # Problem: give each point in network a optimistic exiting direction
-    dijkstra_paths = dijkstra.cal_shortest()
     po_graph.printNetwork(net_show=False, dijkstra=dijkstra, dijkstra_path_only=False)
     # dirs[net_node] =
+    # dirs = {}
     # np.save(args.filename_3_result, dirs)
 
     # # Second step: activate the necessary signage
