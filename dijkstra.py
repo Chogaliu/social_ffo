@@ -20,6 +20,7 @@ class DIJKSTRA:
         # generate the cost with nodes(including exits) - graph
         num_nodes = len(self.nodes)
         num_exits = len(self.exit_info)
+        # net_nodes including exits compared with nodes (po_graph.network_nodes)
         self.net_nodes = np.vstack((self.nodes, self.exit_info[:, 1:3]))
         num = len(self.net_nodes)
         _ = float('inf')
