@@ -47,29 +47,32 @@ def main():
     parser.add_argument('--filename_3_result_2', type=str, default="tests/result-3-2.npy")
     args = parser.parse_args()
 
-    # # First step:
-    # # (1) generate the possible locations of signage
-    # # (2): generate the exiting_dir
-    # po_graph = initialize(args)
+    # First step:
+    # (1) generate the possible locations of signage
+    # (2): generate the exiting_dir
+    po_graph = initialize(args)
+    # po_graph.printGraph(field_show=False)
+    # po_graph.printGraph(field_show=True)
     # # 1)
     # write_lp_1(po_graph, args)
     # optimize_lp_1(po_graph, args)
-    # po_graph.printGraph()
-    # # 2)
-    # po_graph.read_net(args)
-    # print(np.shape(po_graph.network_matrix))
-    # dijkstra = DIJKSTRA(po_graph, args)
-    # po_graph.printNetwork(net_show=False, dijkstra=dijkstra, dijkstra_path_only=False)
+    # po_graph.printGraph(field_show=False)
+    # 2)
+    po_graph.read_net(args)
+    print(np.shape(po_graph.network_matrix))
+    dijkstra = DIJKSTRA(po_graph, args)
+    po_graph.printNetwork(net_show=True, dijkstra=False, dijkstra_path_only=False)
+    po_graph.printNetwork(net_show=True, dijkstra=dijkstra, dijkstra_path_only=False)
 
-    # Second step: activate the necessary signage
-    po_graph = initialize(args)
-    po_graph.read_pre_results(args)
-    write_lp_2(po_graph, args)
-    optimize_lp_2(po_graph, args)
-    po_graph.printGraph()
-    # update the e on the po_graph
-    # po_graph.read_SigntoField(args.k, args.sign_q)
+    # # Second step: activate the necessary signage
+    # po_graph = initialize(args)
+    # po_graph.read_pre_results(args)
+    # write_lp_2(po_graph, args)
+    # optimize_lp_2(po_graph, args)
     # po_graph.printGraph()
+    # # update the e on the po_graph
+    # # po_graph.read_SigntoField(args.k, args.sign_q)
+    # # po_graph.printGraph()
 
 
 def initialize(args):
@@ -116,7 +119,7 @@ def initialize(args):
     exit_info = [(0, 25, 51, args.exit_q),
                  (1, 51, 25, args.exit_q),
                  (2, 25, -1, args.exit_q)]
-    danger_info = [(0, -1, 20, args.danger_q)]
+    danger_info = [(0, -1, 24, args.danger_q)]
     po_graph = PO_GRAPH(args.wide, args.length, args.gap)
     po_graph.read_ObstoField(obs=obs_info, k=args.k)
     po_graph.read_PedtoField(ped=ped_info, k=args.k)

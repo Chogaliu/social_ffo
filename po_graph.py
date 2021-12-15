@@ -304,13 +304,13 @@ class PO_GRAPH:
             ax.add_patch(rect)
 
         # E & signage print
-        if field_show:
-            for node in range(num_node):
-                node_print = self.nodes[node]
-                x = node_print.x
-                y = node_print.y
-                ix, iy = node_print.e_ix, node_print.e_iy
-                e = node_print.e
+        for node in range(num_node):
+            node_print = self.nodes[node]
+            x = node_print.x
+            y = node_print.y
+            ix, iy = node_print.e_ix, node_print.e_iy
+            e = node_print.e
+            if field_show:
                 plt.annotate(
                     "",
                     xytext=(x, y),
@@ -325,49 +325,49 @@ class PO_GRAPH:
                             edgecolors='blue',
                             alpha=0.2)
 
-                if sign_loc_info == 0:
-                    continue
+            if sign_loc_info == 0:
+                continue
 
-                if sign_loc_info[node] == 1.0:
-                    plt.scatter(x, y, c='black', alpha=1.0)
-                else:
-                    continue
+            if sign_loc_info[node] == 1.0:
+                plt.scatter(x, y, c='black', alpha=1.0)
+            else:
+                continue
 
-                if sign_activate == 0:
-                    continue
-                dir_sign = [0, 0]
-                if sign_activate['s{}up'.format(node)] == 1:
-                    dir_sign = [0, 1]
-                if sign_activate['s{}down'.format(node)] == 1:
-                    dir_sign = [0, -1]
-                if sign_activate['s{}left'.format(node)] == 1:
-                    dir_sign = [-1, 0]
-                if sign_activate['s{}right'.format(node)] == 1:
-                    dir_sign = [1, 0]
-                # print the sign_direct on the map
-                if dir_sign != [0, 0]:
-                    plt.scatter(x, y, c='red', alpha=1)
-                    plt.annotate(
-                        "",
-                        xytext=(x, y),
-                        xy=(x + dir_sign[0] * 5, y + dir_sign[1] * 5),
-                        arrowprops=dict(arrowstyle='->', color='red', lw=1),
-                        size=10,
-                    )
-                # # print the E condition after signage application
-                # plt.annotate(
-                #     "",
-                #     xytext=(x, y),
-                #     xy=(x + ix, y + iy),
-                #     arrowprops=dict(arrowstyle='->', color='black', lw=1),
-                #     size=10,
-                # )
-                # plt.scatter(x, y,
-                #             s=e * 100,
-                #             marker='o',
-                #             facecolors='red',
-                #             edgecolors='red',
-                #             alpha=0.2)
+            if sign_activate == 0:
+                continue
+            dir_sign = [0, 0]
+            if sign_activate['s{}up'.format(node)] == 1:
+                dir_sign = [0, 1]
+            if sign_activate['s{}down'.format(node)] == 1:
+                dir_sign = [0, -1]
+            if sign_activate['s{}left'.format(node)] == 1:
+                dir_sign = [-1, 0]
+            if sign_activate['s{}right'.format(node)] == 1:
+                dir_sign = [1, 0]
+            # print the sign_direct on the map
+            if dir_sign != [0, 0]:
+                plt.scatter(x, y, c='red', alpha=1)
+                plt.annotate(
+                    "",
+                    xytext=(x, y),
+                    xy=(x + dir_sign[0] * 5, y + dir_sign[1] * 5),
+                    arrowprops=dict(arrowstyle='->', color='red', lw=1),
+                    size=10,
+                )
+            # # print the E condition after signage application
+            # plt.annotate(
+            #     "",
+            #     xytext=(x, y),
+            #     xy=(x + ix, y + iy),
+            #     arrowprops=dict(arrowstyle='->', color='black', lw=1),
+            #     size=10,
+            # )
+            # plt.scatter(x, y,
+            #             s=e * 100,
+            #             marker='o',
+            #             facecolors='red',
+            #             edgecolors='red',
+            #             alpha=0.2)
         x_major_locator = MultipleLocator(1)
         y_major_locator = MultipleLocator(1)
         ax1 = plt.gca()
@@ -402,7 +402,7 @@ class PO_GRAPH:
             ax.add_patch(rect)
 
         # nodes print
-        plt.scatter(network_nodes[:, 0], network_nodes[:, 1], marker='o', s=4, c='orange', alpha=0.5)
+        plt.scatter(network_nodes[:, 0], network_nodes[:, 1], marker='o', s=7, c='orange', alpha=0.7)
 
         # links print with network_matrix
         if net_show:
@@ -412,23 +412,23 @@ class PO_GRAPH:
                         continue
                     link_x = [network_nodes[n][0], network_nodes[n_temp][0]]
                     link_y = [network_nodes[n][1], network_nodes[n_temp][1]]
-                    plt.plot(link_x, link_y, color='k', linewidth=1, alpha=0.2)
+                    plt.plot(link_x, link_y, color='black', linewidth=0.5, alpha=0.2)
 
         if dijkstra:
-            for node in range(len(dijkstra.nodes)):
-                dijkstra_path = dijkstra.dijkstra_paths[node]
-                length = len(dijkstra_path)
-                path = np.zeros((length, 2))
-                for i in range(length):
-                    path[i] = dijkstra.net_nodes[dijkstra_path[i]]
+            if dijkstra_path_only:
+                n = len(dijkstra_path_only)
+                path = np.zeros((n, 2))
+                for i in range(n):
+                    path[i] = dijkstra.net_nodes[dijkstra_path_only[i]]
                 plt.plot(path[:, 0], path[:, 1], color='b', linewidth=1)
-
-        if dijkstra_path_only:
-            n = len(dijkstra_path_only)
-            path = np.zeros((n, 2))
-            for i in range(n):
-                path[i] = dijkstra.net_nodes[dijkstra_path_only[i]]
-            plt.plot(path[:, 0], path[:, 1], color='b', linewidth=1)
+            else:
+                for node in range(len(dijkstra.nodes)):
+                    dijkstra_path = dijkstra.dijkstra_paths[node]
+                    length = len(dijkstra_path)
+                    path = np.zeros((length, 2))
+                    for i in range(length):
+                        path[i] = dijkstra.net_nodes[dijkstra_path[i]]
+                    plt.plot(path[:, 0], path[:, 1], color='b', linewidth=1)
         x_major_locator = MultipleLocator(1)
         y_major_locator = MultipleLocator(1)
         ax1 = plt.gca()
