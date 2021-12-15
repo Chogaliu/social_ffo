@@ -15,7 +15,7 @@ Second step:
 
 [!remain problem...]
 
-<img width="346" alt="image" src="https://user-images.githubusercontent.com/80196339/144998330-cfd53ecb-0ff7-40b3-b177-38e60d35cec6.png">
+<img width="461" alt="image" src="https://user-images.githubusercontent.com/80196339/145546045-ae4535da-d1b9-412a-a82e-30405d5a5720.png">
 
 utility function assumption：
 
