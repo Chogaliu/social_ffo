@@ -64,52 +64,76 @@ def main():
     po_graph.printNetwork(net_show=True, dijkstra=False, dijkstra_path_only=False)
     po_graph.printNetwork(net_show=True, dijkstra=dijkstra, dijkstra_path_only=False)
 
-    # # Second step: activate the necessary signage
-    # po_graph = initialize(args)
-    # po_graph.read_pre_results(args)
-    # write_lp_2(po_graph, args)
-    # optimize_lp_2(po_graph, args)
+    # Second step: activate the necessary signage
+    po_graph = initialize(args)
+    po_graph.read_pre_results(args)
+    write_lp_2(po_graph, args)
+    optimize_lp_2(po_graph, args)
+    po_graph.printGraph()
+    # update the e on the po_graph
+    # po_graph.read_SigntoField(args.k, args.sign_q)
     # po_graph.printGraph()
-    # # update the e on the po_graph
-    # # po_graph.read_SigntoField(args.k, args.sign_q)
-    # # po_graph.printGraph()
 
 
 def initialize(args):
     """
     po_graph initialize: load the information and influence of ped, obs, exit, danger, (sign_loc_info)
-    initialize for Step 1 step1_fin = False; for Step 2 step1_fin = True
     obs_info requirements:
     1/ the left-bottom point and the width&length
     2/ in rectangle shape
     3/ must be continuous without intersection by other obstacles
     """
 
-    obs_info = [(0, 10, 0, 1, 12, args.obs_q),
-                (1, 25, 0, 1, 12, args.obs_q),
-                (2, 10, 12, 3, 1, args.obs_q),
-                (3, 23, 12, 3, 1, args.obs_q),
-                (4, 40, 0, 1, 8, args.obs_q),
-                (5, 0, 27, 20, 1, args.obs_q),
-                (6, 15, 40, 1, 10, args.obs_q),
-                (7, 15, 39, 12, 1, args.obs_q),
-                (8, 40, 20, 1, 10, args.obs_q),
-                (9, 28, 30, 12, 1, args.obs_q),
-                # walls:
-                (10, -1, 27, 1, 24, args.obs_q),
-                (11, -1, 7, 1, 14, args.obs_q),
-                (12, 0, -1, 10, 1, args.obs_q),
-                (13, 30, -1, 10, 1, args.obs_q),
-                (14, 50, -1, 1, 20, args.obs_q),
-                (15, 50, 31, 1, 20, args.obs_q),
-                (16, 0, 50, 15, 1, args.obs_q),
-                (17, 30, 50, 10, 1, args.obs_q),
-                (18, 40, -1, 10, 1, args.obs_q),
-                (19, 40, 50, 10, 1, args.obs_q),
-                (20, 10, -1, 10, 1, args.obs_q),
-                (21, 15, 50, 5, 1, args.obs_q),
-                (22, 40, 30, 1, 20, args.obs_q)
+    # # one condition (assumption)
+    # obs_info = [(0, 10, 0, 1, 12, args.obs_q),
+    #             (1, 25, 0, 1, 12, args.obs_q),
+    #             (2, 10, 12, 3, 1, args.obs_q),
+    #             (3, 23, 12, 3, 1, args.obs_q),
+    #             (4, 40, 0, 1, 8, args.obs_q),
+    #             (5, 0, 27, 20, 1, args.obs_q),
+    #             (6, 15, 40, 1, 10, args.obs_q),
+    #             (7, 15, 39, 12, 1, args.obs_q),
+    #             (8, 40, 20, 1, 10, args.obs_q),
+    #             (9, 28, 30, 12, 1, args.obs_q),
+    #             # walls:
+    #             (10, -1, 27, 1, 24, args.obs_q),
+    #             (11, -1, 7, 1, 14, args.obs_q),
+    #             (12, 0, -1, 10, 1, args.obs_q),
+    #             (13, 30, -1, 10, 1, args.obs_q),
+    #             (14, 50, -1, 1, 20, args.obs_q),
+    #             (15, 50, 31, 1, 20, args.obs_q),
+    #             (16, 0, 50, 15, 1, args.obs_q),
+    #             (17, 30, 50, 10, 1, args.obs_q),
+    #             (18, 40, -1, 10, 1, args.obs_q),
+    #             (19, 40, 50, 10, 1, args.obs_q),
+    #             (20, 10, -1, 10, 1, args.obs_q),
+    #             (21, 15, 50, 5, 1, args.obs_q),
+    #             (22, 40, 30, 1, 20, args.obs_q)
+    #             ]
+
+    # second condition (Museum of art PuDong 1F)
+    obs_info = [(0, 0, 0, 0.7, 22, args.obs_q),
+                (1, 0.7, 20.7, 9.3, 1.3, args.obs_q),
+                (2, 10.7, 20.7, 14.6, 1.3, args.obs_q),
+                (3, 26, 20.7, 7.3, 1.3,args.obs_q),
+                (4, 10, 11.4, 0.7, 10.6, args.obs_q),
+                (5, 25.3, 16.7, 0.7, 5.3, args.obs_q),
+                (6, 25.3, 11.4, 0.7, 3.3, args.obs_q),
+                (7, 6.7, 0, 0.7, 10.7, args.obs_q),
+                (8, 10, 10.7, 4, 0.7, args.obs_q),
+                (9, 16, 10.7, 4, 0.7, args.obs_q),
+                (10, 10, 7.4, 0.7, 3.3, args.obs_q),
+                (11, 22, 10.7, 4, 0.7,args.obs_q),
+                (12, 10, 0, 0.7, 5.4, args.obs_q),
+                (13, 7.4, 0, 2.6, 2, args.obs_q),
+                (14, 10.7, 0, 14.6, 2, args.obs_q),
+                (15, 25.3, 0, 0.7, 10.7, args.obs_q),
+                (16, 26, 0, 4, 2, args.obs_q),
+                (17, 28, 5.3, 8.6, 0.7, args.obs_q),
+                (18, 35.3, 0, 1.3, 5.3, args.obs_q),
+                (19, 35.3, 6, 1.3, 16, args.obs_q),
                 ]
+
     # need more information extracted from trajectory
     ped_info = [(0, 7.5, 8.5, args.ped_q),
                 (1, 3.5, 5.5, args.ped_q),
@@ -220,6 +244,7 @@ def write_lp_2(po_graph, args):
             guiding_i_dir = get_guiding_i_dir(variables, sign)
             guiding_dir = get_guiding_dir(po_graph, node, sign, args, guiding_i_dir)
             angle_matter_u = sum(current_i_dir * guiding_i_dir)  # [-1,1]
+            # angle_matter_u = sum(current_i_dir * exiting_i_dir)  # [-1,1]
             e_matter_u = po_graph.nodes[node].e  # [?]
 
             # constraint 1 -- direction requirement - to promise the correctness of the guiding direction
