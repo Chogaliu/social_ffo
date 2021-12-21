@@ -89,7 +89,7 @@ class DIJKSTRA:
                 roads = []
                 p = end
                 l_en = 0
-                while p >= 1 and l_en < points:
+                while p >= 0 and l_en < points:
                     road[l_en] = p
                     p = pre[p]
                     l_en += 1
@@ -104,5 +104,5 @@ class DIJKSTRA:
             self.dijkstra_paths[start] = record_exit_roads[idx]
             current_loc = self.nodes[start]
             next_loc = self.net_nodes[self.dijkstra_paths[start][1]]
-            direction = next_loc-current_loc
-            self.dirs[start] = direction/np.linalg.norm(direction)
+            direction = next_loc - current_loc
+            self.dirs[start] = direction / np.linalg.norm(direction)

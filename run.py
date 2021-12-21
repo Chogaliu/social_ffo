@@ -40,23 +40,21 @@ def main():
     parser.add_argument('--filename_1', type=str, default="tests/test-1.lp")
     parser.add_argument('--filename_2', type=str, default="tests/test-2.lp")
     parser.add_argument('--filename_3', type=str, default="tests/test-3.lp")
-    parser.add_argument('--filename_1_result', type=str, default="tests/result-1.npy")
-    parser.add_argument('--filename_1_result_2', type=str, default="tests/result-1-2.npy")
-    parser.add_argument('--filename_2_result', type=str, default="tests/result-2.npy")
-    parser.add_argument('--filename_3_result', type=str, default="tests/result-3.npy")
-    parser.add_argument('--filename_3_result_2', type=str, default="tests/result-3-2.npy")
+    parser.add_argument('--filename_1_result', type=str, default="tests/result-1.npy", help='sign_loc_info')
+    parser.add_argument('--filename_1_result_2', type=str, default="tests/result-1-2.npy", help='dist_matrix_ns')
+    parser.add_argument('--filename_2_result', type=str, default="tests/result-2.npy", help='result of step 2')
+    parser.add_argument('--filename_3_result', type=str, default="tests/result-3.npy", help='dirs')
+    parser.add_argument('--filename_3_result_2', type=str, default="tests/result-3-2.npy", help='network_nodes')
     args = parser.parse_args()
 
     # First step:
     # (1) generate the possible locations of signage
     # (2): generate the exiting_dir
     po_graph = initialize(args)
-    # po_graph.printGraph(field_show=False)
-    # po_graph.printGraph(field_show=True)
-    # # 1)
-    # write_lp_1(po_graph, args)
-    # optimize_lp_1(po_graph, args)
-    # po_graph.printGraph(field_show=False)
+    # 1)
+    write_lp_1(po_graph, args)
+    optimize_lp_1(po_graph, args)
+    po_graph.printGraph(field_show=False)
     # 2)
     po_graph.read_net(args)
     print(np.shape(po_graph.network_matrix))
@@ -69,7 +67,7 @@ def main():
     po_graph.read_pre_results(args)
     write_lp_2(po_graph, args)
     optimize_lp_2(po_graph, args)
-    po_graph.printGraph()
+    po_graph.printGraph(field_show=False)
     # update the e on the po_graph
     # po_graph.read_SigntoField(args.k, args.sign_q)
     # po_graph.printGraph()
@@ -115,7 +113,7 @@ def initialize(args):
     obs_info = [(0, 0, 0, 0.7, 22, args.obs_q),
                 (1, 0.7, 20.7, 9.3, 1.3, args.obs_q),
                 (2, 10.7, 20.7, 14.6, 1.3, args.obs_q),
-                (3, 26, 20.7, 7.3, 1.3,args.obs_q),
+                (3, 26, 20.7, 7.3, 1.3, args.obs_q),
                 (4, 10, 11.4, 0.7, 10.6, args.obs_q),
                 (5, 25.3, 16.7, 0.7, 5.3, args.obs_q),
                 (6, 25.3, 11.4, 0.7, 3.3, args.obs_q),
@@ -123,7 +121,7 @@ def initialize(args):
                 (8, 10, 10.7, 4, 0.7, args.obs_q),
                 (9, 16, 10.7, 4, 0.7, args.obs_q),
                 (10, 10, 7.4, 0.7, 3.3, args.obs_q),
-                (11, 22, 10.7, 4, 0.7,args.obs_q),
+                (11, 22, 10.7, 4, 0.7, args.obs_q),
                 (12, 10, 0, 0.7, 5.4, args.obs_q),
                 (13, 7.4, 0, 2.6, 2, args.obs_q),
                 (14, 10.7, 0, 14.6, 2, args.obs_q),
@@ -140,11 +138,20 @@ def initialize(args):
                 (2, 15.5, 5.5, args.ped_q),
                 (3, 15.5, 12.4, args.ped_q),
                 (4, 3.5, 3.5, args.ped_q)]
-    exit_info = [(0, 25, 51, args.exit_q),
-                 (1, 51, 25, args.exit_q),
-                 (2, 25, -1, args.exit_q)]
-    danger_info = [(0, -1, 24, args.danger_q)]
-    po_graph = PO_GRAPH(args.wide, args.length, args.gap)
+    # casual distribution of pedestrian
+    # num_ped =
+    # ped_info = []
+    # for n in range(num_ped):
+    #     ped_info.append(n, x, y, args.ped_q)
+
+    exit_info = [(0, 3.7, -1, args.exit_q),
+                 (1, 32.6, -1, args.exit_q),
+                 (2, 34.3, 23, args.exit_q)]
+
+    danger_info = [(0, 1, 10, args.danger_q)]
+
+    # generate Po_graph
+    po_graph = PO_GRAPH(dim_w=36.6, dim_l=22, gap=1)
     po_graph.read_ObstoField(obs=obs_info, k=args.k)
     po_graph.read_PedtoField(ped=ped_info, k=args.k)
     po_graph.read_ExittoField(exit=exit_info, k=args.k)
