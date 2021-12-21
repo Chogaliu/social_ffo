@@ -279,7 +279,7 @@ class PO_GRAPH:
             if list(temp_inten) != [0., 0.]:
                 self.nodes[node].addInten(temp_inten)
 
-    def printGraph(self, field_show=True):
+    def printGraph(self, field_show=True, enviro_show=True):
         """
         Print function for the graph
         For debugging proposes (visualize)
@@ -295,13 +295,16 @@ class PO_GRAPH:
         sign_activate = self.sign_activate
 
         # environment print
-        plt.scatter(ped_info[:, 1], ped_info[:, 2], c='blue', alpha=1)
-        plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
-        plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
         for obs in range(len(obs_info)):
             rect = mpathes.Rectangle(obs_info[obs][1:3], obs_info[obs][3], obs_info[obs][4],
                                      color='black', alpha=0.5)
             ax.add_patch(rect)
+
+        if enviro_show:
+            plt.scatter(ped_info[:, 1], ped_info[:, 2], c='blue', alpha=1)
+            plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
+            plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
+
 
         # E & signage print
         for node in range(num_node):
