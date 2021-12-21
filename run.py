@@ -47,30 +47,36 @@ def main():
     parser.add_argument('--filename_3_result_2', type=str, default="tests/result-3-2.npy", help='network_nodes')
     args = parser.parse_args()
 
-    # First step:
-    # (1) generate the possible locations of signage
-    # (2): generate the exiting_dir
-    po_graph = initialize(args)
-    # 1)
-    write_lp_1(po_graph, args)
-    optimize_lp_1(po_graph, args)
-    po_graph.printGraph(field_show=False)
-    # 2)
-    po_graph.read_net(args)
-    print(np.shape(po_graph.network_matrix))
-    dijkstra = DIJKSTRA(po_graph, args)
-    po_graph.printNetwork(net_show=True, dijkstra=False, dijkstra_path_only=False)
-    po_graph.printNetwork(net_show=True, dijkstra=dijkstra, dijkstra_path_only=False)
+    # The optimization process is divided into two steps
+    # In Step 1, force field is not used
 
-    # Second step: activate the necessary signage
-    po_graph = initialize(args)
-    po_graph.read_pre_results(args)
-    write_lp_2(po_graph, args)
-    optimize_lp_2(po_graph, args)
-    po_graph.printGraph(field_show=False)
-    # update the e on the po_graph
-    # po_graph.read_SigntoField(args.k, args.sign_q)
-    # po_graph.printGraph()
+
+    # For parameter calibration
+
+    # # First step:
+    # # (1) generate the possible locations of signage
+    # # (2): generate the exiting_dir
+    # po_graph = initialize(args)
+    # # 1)
+    # write_lp_1(po_graph, args)
+    # optimize_lp_1(po_graph, args)
+    # po_graph.printGraph(field_show=False, enviro_show=False)
+    # # 2)
+    # po_graph.read_net(args)
+    # print(np.shape(po_graph.network_matrix))
+    # dijkstra = DIJKSTRA(po_graph, args)
+    # po_graph.printNetwork(net_show=True, dijkstra=False, dijkstra_path_only=False)
+    # po_graph.printNetwork(net_show=True, dijkstra=dijkstra, dijkstra_path_only=False)
+    #
+    # # Second step: activate the necessary signage
+    # po_graph = initialize(args)
+    # po_graph.read_pre_results(args)
+    # write_lp_2(po_graph, args)
+    # optimize_lp_2(po_graph, args)
+    # po_graph.printGraph(field_show=True, enviro_show=True)
+    # # update the e on the po_graph
+    # # po_graph.read_SigntoField(args.k, args.sign_q)
+    # # po_graph.printGraph()
 
 
 def initialize(args):
@@ -138,7 +144,7 @@ def initialize(args):
                 (2, 15.5, 5.5, args.ped_q),
                 (3, 15.5, 12.4, args.ped_q),
                 (4, 3.5, 3.5, args.ped_q)]
-    # casual distribution of pedestrian
+    # casual distribution of pedestrian no intersection with obstacles and in the range
     # num_ped =
     # ped_info = []
     # for n in range(num_ped):

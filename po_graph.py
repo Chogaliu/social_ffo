@@ -305,7 +305,6 @@ class PO_GRAPH:
             plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
             plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
 
-
         # E & signage print
         for node in range(num_node):
             node_print = self.nodes[node]

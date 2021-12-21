@@ -1,9 +1,10 @@
-'''
+"""
 Helper functions to compute the neighbourhood relevant to social grid
 
 Author: Qiujia Liu
 Data: 20th August 2021
-'''
+"""
+
 import numpy as np
 
 # def getGridMask(loc, dimensions, neighborhood_size, grid_size):
