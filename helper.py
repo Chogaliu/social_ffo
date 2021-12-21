@@ -84,6 +84,9 @@ def get_poten_signs(sign_loc, value=1):
 
 
 def get_utility(angle, e):
+    """
+    calculate the utility of sign a to ped in region b
+    """
     u = (-0.6 * e + 1) * (-5 * angle + 15) + 4 * e
     return u
 
