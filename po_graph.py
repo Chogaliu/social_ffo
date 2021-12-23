@@ -17,7 +17,6 @@ import matplotlib.patches as mpathes
 import math
 import shutil
 from tqdm import tqdm
-from helper import intensity_cal as inten_cal
 from matplotlib.pyplot import MultipleLocator
 import time
 from helper import *
@@ -86,11 +85,11 @@ class PO_GRAPH:
         2) pooling nodes
         3) connect N1 with N2 and find the middle nodes as the potential nodes (except ones within same obstacle)
             also no N1,N2 on intersection with obstacle
+             * no intersection and no overlap
         2. nodes' feasible links （construct network）
         1) generate all links between nodes
         2) if feasible (no intersection with obstacle)
-        3) record all the feasible links and feasible nodes
-        3. generate the nodes-links matrix 0/1
+        3) record all the feasible links and feasible nodes, generate the nodes-links matrix 0/1
         return: nodes-links matrix n-n:0/1 & feasible_nodes [x,y]
         """
         # 1.1)
@@ -114,7 +113,7 @@ class PO_GRAPH:
         self.network_nodes = feasible_nodes
         self.network_matrix = nodes_links_matrix
 
-    def read_ObstoField(self, obs, k):
+    def read_ObstoField(self, obs, A, B):
         """
         obs_info: lists of list of numpy array, each numpy array corresponds to an obstacle)
         [obs_id,lb_x,lb_y,o_w,o_l,o_q]
@@ -132,21 +131,21 @@ class PO_GRAPH:
             y = self.nodes[node].y
             temp_inten = np.array([0, 0], dtype=float)
             for n in range(len(obs_info)):
-                obs_w, obs_l, obs_q = obs_info[n][3:6]
+                obs_w, obs_l = obs_info[n][3:5]
                 obs_x, obs_y = obs_info[n][1:3]
                 if obs_x <= x <= obs_x + obs_w:
                     if y > obs_y + obs_l:
-                        temp_inten += np.array([0, inten_cal(k, obs_q, y - (obs_y + obs_l))])
+                        temp_inten += np.array([0, intensity_cal_o(A, B, y - (obs_y + obs_l))])
                     elif y < obs_y:
-                        temp_inten += np.array([0, -inten_cal(k, obs_q, obs_y - y)])
+                        temp_inten += np.array([0, -intensity_cal_o(A, B, obs_y - y)])
                     else:
                         dele_node.append(node)
                         break
                 if obs_y <= y <= obs_y + obs_l:
                     if x > obs_x + obs_w:
-                        temp_inten += np.array([inten_cal(k, obs_q, x - (obs_x + obs_w)), 0])
+                        temp_inten += np.array([intensity_cal_o(A, B, x - (obs_x + obs_w)), 0])
                     elif x < obs_x:
-                        temp_inten += np.array([-inten_cal(k, obs_q, obs_x - x), 0])
+                        temp_inten += np.array([-intensity_cal_o(A, B, obs_x - x), 0])
                     else:
                         dele_node.append(node)
                         break
@@ -157,127 +156,131 @@ class PO_GRAPH:
             index = index - counter
             self.nodes.pop(index)
 
-    def read_PedtoField(self, ped, k):
-        """
-        ped_info: lists of list of numpy array, each numpy array corresponds to a pedestrian
-        [ped_id,p_x,p_y,p_q]
-        return:
-        # problem:
-        assume there is no eyesight limitation which is unrealized
-        # congestion avoidance + herding influence
-        """
-        self.ped_info = np.array(ped)
-        ped_info = self.ped_info
-        for node in range(len(self.nodes)):
-            x = self.nodes[node].x
-            y = self.nodes[node].y
-            temp_inten = np.array([0, 0], dtype=float)
-            for n in range(len(ped_info)):
-                ped_x, ped_y = ped_info[n][1], ped_info[n][2]
-                ped_q = ped_info[n][3]
-                dis = np.array([x - ped_x, y - ped_y])
-                d = np.linalg.norm(dis)
-                if d == 0:
-                    var = 1e-2
-                    e_1 = inten_cal(k, ped_q, var)
-                    self.nodes[node].addInten1(e_1)
-                    continue
-                e = inten_cal(k, ped_q, d)
-                temp_inten += np.array([e * (dis[0] / d), e * (dis[1] / d)])
-            if list(temp_inten) != [0., 0.]:
-                self.nodes[node].addInten(temp_inten)
+    # def read_PedtoField(self, ped, k):
+    #     """
+    #     ped_info: lists of list of numpy array, each numpy array corresponds to a pedestrian
+    #     [ped_id,p_x,p_y,p_q]
+    #     return:
 
-    def read_ExittoField(self, exit, k):
+    #     """
+    #     self.ped_info = np.array(ped)
+    #     ped_info = self.ped_info
+    #     for node in range(len(self.nodes)):
+    #         x = self.nodes[node].x
+    #         y = self.nodes[node].y
+    #         temp_inten = np.array([0, 0], dtype=float)
+    #         for n in range(len(ped_info)):
+    #             ped_x, ped_y = ped_info[n][1], ped_info[n][2]
+    #             ped_q = ped_info[n][3]
+    #             dis = np.array([x - ped_x, y - ped_y])
+    #             d = np.linalg.norm(dis)
+    #             if d == 0:
+    #                 var = 1e-2
+    #                 e_1 = inten_cal(k, ped_q, var)
+    #                 self.nodes[node].addInten1(e_1)
+    #                 continue
+    #             e = inten_cal(k, ped_q, d)
+    #             temp_inten += np.array([e * (dis[0] / d), e * (dis[1] / d)])
+    #         if list(temp_inten) != [0., 0.]:
+    #             self.nodes[node].addInten(temp_inten)
+
+    def read_DEtoField(self, danger, exit, B_w):
         """
+        danger_info:
+        [danger_id, d_x, d_y]
         exit_info:
-        [exit_id, e_x, e_y, e_q]
+        [exit_id, e_x, e_y]
         return:
         # problem:
         no expected velocity & current velocity considered
+        # problem:
+        # assume there is no eyesight limitation which is unrealized
+        # congestion avoidance + herding influence
         """
+        self.danger_info = np.array(danger)
         self.exit_info = np.array(exit)
+        danger_info = self.danger_info
         exit_info = self.exit_info
         for node in range(len(self.nodes)):
             x = self.nodes[node].x
             y = self.nodes[node].y
             temp_inten = np.array([0, 0], dtype=float)
-            for n in range(len(exit_info)):
-                exit_x, exit_y = exit_info[n][1], exit_info[n][2]
-                exit_q = exit_info[n][3]
-                dis = np.array([x - exit_x, y - exit_y])
-                d = np.linalg.norm(dis)
-                if d == 0:
-                    var = 1e-2
-                    e_1 = -inten_cal(k, exit_q, var)
-                    self.nodes[node].addInten1(e_1)
-                    continue
-                e = -inten_cal(k, exit_q, d)
-                temp_inten += np.array([e * (dis[0] / d), e * (dis[1] / d)])
-            if list(temp_inten) != [0., 0.]:
-                self.nodes[node].addInten(temp_inten)
-
-    def read_DangertoField(self, danger, k):
-        """
-        danger_info:
-        [danger_id, d_x, d_y, d_q]
-        return:
-        # problem:
-        no expected velocity & current velocity considered
-        """
-        self.danger_info = np.array(danger)
-        danger_info = self.danger_info
-        for node in range(len(self.nodes)):
-            x = self.nodes[node].x
-            y = self.nodes[node].y
-            temp_inten = np.array([0, 0], dtype=float)
+            # danger calculation
+            r_shortest = float('inf')
+            Dis = np.array([0, 0])
             for n in range(len(danger_info)):
                 danger_x, danger_y = danger_info[n][1], danger_info[n][2]
-                danger_q = danger_info[n][3]
                 dis = np.array([x - danger_x, y - danger_y])
                 d = np.linalg.norm(dis)
+                if d < r_shortest:
+                    r_shortest = d
                 if d == 0:
-                    var = 1e-2
-                    e_1 = inten_cal(k, danger_q, var)
+                    e_1 = intensity_cal_e(B_w, d)
                     self.nodes[node].addInten1(e_1)
                     continue
-                e = inten_cal(k, danger_q, d)
+                e = intensity_cal_e(B_w, r_shortest)
+                temp_inten += np.array([e * (dis[0] / d), e * (dis[1] / d)])
+
+                danger_x, danger_y = danger_info[n][1], danger_info[n][2]
+                dis = np.array([x - danger_x, y - danger_y])
+                d = np.linalg.norm(dis)
+                if d < r_shortest:
+                    r_shortest = d
+            D = np.linalg.norm(Dis)
+            if D == 0 or r_shortest == 0:
+                var = 1e-2
+                e_1 = intensity_cal_d(B_w, var)
+                self.nodes[node].addInten1(e_1)
+            else:
+                e = intensity_cal_d(B_w, r_shortest)
+                temp_inten += np.array([e * (Dis[0] / D), e * (Dis[1] / D)])
+            # exit calculation
+            for n in range(len(exit_info)):
+                exit_x, exit_y = exit_info[n][1], exit_info[n][2]
+                dis = np.array([exit_x - x, exit_y - y])
+                d = np.linalg.norm(dis)
+                if d == 0:
+                    e_1 = intensity_cal_e(B_w, r_shortest)
+                    self.nodes[node].addInten1(e_1)
+                    continue
+                e = intensity_cal_e(B_w, r_shortest)
                 temp_inten += np.array([e * (dis[0] / d), e * (dis[1] / d)])
             if list(temp_inten) != [0., 0.]:
                 self.nodes[node].addInten(temp_inten)
 
-    def read_SigntoField(self, k, q):
-        """
-        sign_info:
-        x{-}{-}=0/1
-        return: updated po_graph
-        Problem: calculation of sign_influence is different from others
-        """
-        sign_activate = self.sign_activate
-        sign_loc_info = self.sign_loc_info
-        if sign_loc_info == 0:
-            print('no sign information')
-            return
-        if sign_activate == 0:
-            print('no activate information')
-            return
-        poten_signs = get_poten_signs(sign_loc_info)
-        num_node = len(self.nodes)
-        for node in range(num_node):
-            x = self.nodes[node].x
-            y = self.nodes[node].y
-            temp_inten = np.array([0, 0], dtype=float)
-            for sign in poten_signs:
-                s_x = self.nodes[sign].x
-                s_y = self.nodes[sign].y
-                d = np.linalg.norm(np.array([x - s_x, y - s_y]))
-                e = inten_cal(k, q, d)
-                temp_inten += np.array([
-                    e * sum(np.array([0, 0, -1, 1]) * np.array(
-                        list(sign_activate['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right']))),
-                    e * sum(np.array([1, -1, 0, 0]) * np.array(
-                        list(sign_activate['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right'])))])
-            if list(temp_inten) != [0., 0.]:
-                self.nodes[node].addInten(temp_inten)
+    # def read_SigntoField(self, k, q):
+    #     """
+    #     sign_info:
+    #     x{-}{-}=0/1
+    #     return: updated po_graph
+    #     Problem: calculation of sign_influence is different from others
+    #     """
+    #     sign_activate = self.sign_activate
+    #     sign_loc_info = self.sign_loc_info
+    #     if sign_loc_info == 0:
+    #         print('no sign information')
+    #         return
+    #     if sign_activate == 0:
+    #         print('no activate information')
+    #         return
+    #     poten_signs = get_poten_signs(sign_loc_info)
+    #     num_node = len(self.nodes)
+    #     for node in range(num_node):
+    #         x = self.nodes[node].x
+    #         y = self.nodes[node].y
+    #         temp_inten = np.array([0, 0], dtype=float)
+    #         for sign in poten_signs:
+    #             s_x = self.nodes[sign].x
+    #             s_y = self.nodes[sign].y
+    #             d = np.linalg.norm(np.array([x - s_x, y - s_y]))
+    #             e = inten_cal(k, q, d)
+    #             temp_inten += np.array([
+    #                 e * sum(np.array([0, 0, -1, 1]) * np.array(
+    #                     list(sign_activate['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right']))),
+    #                 e * sum(np.array([1, -1, 0, 0]) * np.array(
+    #                     list(sign_activate['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right'])))])
+    #         if list(temp_inten) != [0., 0.]:
+    #             self.nodes[node].addInten(temp_inten)
 
     def printGraph(self, field_show=True, enviro_show=True):
         """
@@ -295,13 +298,13 @@ class PO_GRAPH:
         sign_activate = self.sign_activate
 
         # environment print
-        for obs in range(len(obs_info)):
-            rect = mpathes.Rectangle(obs_info[obs][1:3], obs_info[obs][3], obs_info[obs][4],
-                                     color='black', alpha=0.5)
-            ax.add_patch(rect)
+        # for obs in range(len(obs_info)):
+        #     rect = mpathes.Rectangle(obs_info[obs][1:3], obs_info[obs][3], obs_info[obs][4],
+        #                              color='black', alpha=0.5)
+        #     ax.add_patch(rect)
 
         if enviro_show:
-            plt.scatter(ped_info[:, 1], ped_info[:, 2], c='blue', alpha=1)
+            # plt.scatter(ped_info[:, 1], ped_info[:, 2], c='blue', alpha=1)
             plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
             plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
 
@@ -321,7 +324,7 @@ class PO_GRAPH:
                     size=10,
                 )
                 plt.scatter(x, y,
-                            s=e * 100,
+                            s=e * 5,
                             marker='o',
                             facecolors='blue',
                             edgecolors='blue',
@@ -380,7 +383,7 @@ class PO_GRAPH:
         plt.savefig('figure_field{}.png'.format(time.time()))
         # plt.show()
 
-    def printNetwork(self, net_show=False, dijkstra=False, dijkstra_path_only=False):
+    def printNetwork(self, net_show=False, enviro_show=True, dijkstra=False, dijkstra_path_only=False):
         """
         Print function for the network (nodes-links matrix)
         For debugging proposes (visualize)
@@ -396,15 +399,14 @@ class PO_GRAPH:
         num_net_node = len(network_nodes)
 
         # environment print
-        plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
-        plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
         for obs in range(len(obs_info)):
             rect = mpathes.Rectangle(obs_info[obs][1:3], obs_info[obs][3], obs_info[obs][4],
                                      color='black', alpha=0.5)
             ax.add_patch(rect)
 
-        # nodes print
-        plt.scatter(network_nodes[:, 0], network_nodes[:, 1], marker='o', s=7, c='orange', alpha=0.7)
+        if enviro_show:
+            plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
+            plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
 
         # links print with network_matrix
         if net_show:
@@ -414,7 +416,10 @@ class PO_GRAPH:
                         continue
                     link_x = [network_nodes[n][0], network_nodes[n_temp][0]]
                     link_y = [network_nodes[n][1], network_nodes[n_temp][1]]
-                    plt.plot(link_x, link_y, color='black', linewidth=0.5, alpha=0.2)
+                    plt.plot(link_x, link_y, color='grey', linewidth=0.5, alpha=0.5)
+
+        # nodes print
+        plt.scatter(network_nodes[:, 0], network_nodes[:, 1], marker='o', s=15, c='orange', alpha=1)
 
         if dijkstra:
             if dijkstra_path_only:
@@ -422,7 +427,7 @@ class PO_GRAPH:
                 path = np.zeros((n, 2))
                 for i in range(n):
                     path[i] = dijkstra.net_nodes[dijkstra_path_only[i]]
-                plt.plot(path[:, 0], path[:, 1], color='b', linewidth=1)
+                plt.plot(path[:, 0], path[:, 1], color='b', linewidth=0.8)
             else:
                 for node in range(len(dijkstra.nodes)):
                     dijkstra_path = dijkstra.dijkstra_paths[node]

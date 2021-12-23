@@ -10,11 +10,52 @@ from gurobipy import *
 from tqdm import tqdm
 
 
-def intensity_cal(k, q, r):
+def intensity_cal_d(B_w, r):
+    """
+    danger source
+    r: the shortest distance from the cloest DH
+    """
     if r == 0:
         r = 1e-2
-    e = k * q / (r ** 2)
+    w = math.exp(-r/B_w)
+    v = max(1.5, w*5)
+    e = w * v/0.5
     return e
+
+
+def intensity_cal_e(B_w, r):
+    """
+    exit
+    r: the shortest distance from the cloest DH
+    """
+    if r == 0:
+        r = 1e-2
+    w = math.exp(-r/B_w)
+    v = max(1.5, w*5)
+    e = (1-w) * v/0.5
+    return e
+
+
+def intensity_cal_o(A, B, r):
+    """
+    rigid obstacle
+    """
+    if r == 0:
+        r = 1e-2
+    e = A * math.exp(-r/B)
+    # F_sd need the individual velocity as the parameter
+    # e = math.exp(r/B_sd)
+    return e
+
+
+# def intensity_cal_h(k, q, r):
+#     """
+#     herding
+#     """
+#     if r == 0:
+#         r = 1e-2
+#
+#     return e
 
 
 def cal_var(variables, node, current_idir, guiding_dir):
@@ -124,7 +165,7 @@ def find_the_fittest_dirs(po_graph):
         node_min = 'zero'
         for net_node_id in range(len(network_nodes)):
             net_node_loc = network_nodes[net_node_id]
-            dist = np.linalg.norm(net_node_loc-node_loc)
+            dist = np.linalg.norm(net_node_loc - node_loc)
             if dist < dist_min:
                 if check_intersection_state(po_graph.obs_info, node_loc, net_node_loc):
                     continue
@@ -196,6 +237,34 @@ def check_intersection_state(obs_info, node_1, node_2):
                                                  Point(node_1[0], node_1[1]),
                                                  Point(node_2[0], node_2[1]))
         if is_intersect_ns_temp:
+            return True
+    return False
+
+
+def check_overlap_state(obs_info, node_1):
+    """
+    used to check if the node is inside the ob
+    node_1, obs_info: array
+    return:
+    True: overlapped
+    False: No overlapped
+    """
+    for obs in range(len(obs_info)):
+        obs_x, obs_y = obs_info[obs][1:3]
+        obs_w, obs_l = obs_info[obs][3:5]
+        lb_point = obs_x, obs_y
+        rt_point = obs_x + obs_w, obs_y + obs_l
+        lt_point = obs_x, obs_y + obs_l
+        rb_point = obs_x + obs_w, obs_y
+        a = (lt_point[0] - lb_point[0]) * (node_1[1] - lb_point[1]) - (lt_point[1] - lb_point[1]) * (
+                node_1[0] - lb_point[0])
+        b = (rt_point[0] - lt_point[0]) * (node_1[1] - lt_point[1]) - (rt_point[1] - lt_point[1]) * (
+                node_1[0] - lt_point[0])
+        c = (rb_point[0] - rt_point[0]) * (node_1[1] - rt_point[1]) - (rb_point[1] - rt_point[1]) * (
+                node_1[0] - rt_point[0])
+        d = (lb_point[0] - rb_point[0]) * (node_1[1] - rb_point[1]) - (lb_point[1] - rb_point[1]) * (
+                node_1[0] - rb_point[0])
+        if (a > 0 and b > 0 and c > 0 and d > 0) or (a < 0 and b < 0 and c < 0 and d < 0):
             return True
     return False
 
@@ -295,9 +364,9 @@ def get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info):
 
         # alter 2:  135*135
         for j in range(i + 1, size_):
+            # at least one of the obstacle is not intersected with others
             if 1 not in [len(pooled_nodes_ids[i]), len(pooled_nodes_ids[j])]:
                 continue
-
             if list(set(pooled_nodes_ids[i]) & set(pooled_nodes_ids[j])):
                 continue
             if str(pooled_nodes_ids[i]) + ';' + str(pooled_nodes_ids[j]) in appeared or \
@@ -308,10 +377,13 @@ def get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info):
             node_j = pooled_nodes_with_id[j][1:3]
             non_temp = list(map(int, list(set(pooled_nodes_ids[i]) | set(pooled_nodes_ids[j]))))
             obs_info_temp = np.delete(obs_info, non_temp, axis=0)
+            # check intersection state
             if check_intersection_state(obs_info_temp, node_i, node_j):
                 continue
             mid_point = (node_i + node_j) / 2
-            # Problem remain: overlap with obstacle
+            # check overlap state
+            if check_overlap_state(obs_info, mid_point):
+                continue
             poten_net_nodes.append(mid_point)
     return np.array(poten_net_nodes)
 

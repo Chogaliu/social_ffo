@@ -11,7 +11,6 @@ from po_graph import PO_GRAPH
 import random
 import numpy as np
 from gurobipy import *
-from helper import intensity_cal as inten_cal
 from helper import *
 from tqdm import tqdm
 from dijkstra import DIJKSTRA
@@ -22,17 +21,12 @@ def main():
     parser.add_argument('--wide', type=int, default=50)
     parser.add_argument('--length', type=int, default=50)
     parser.add_argument('--gap', type=float, default=2)
-    parser.add_argument('--obs_q', type=float, default=0.2,
-                        help='the influence bring by obstacle')
-    parser.add_argument('--ped_q', type=float, default=0.2,
+    parser.add_argument('--A', type=float, default=2000,
                         help='the influence bring by pedestrian')
-    parser.add_argument('--exit_q', type=float, default=5,
-                        help='the influence bring by exit')
-    parser.add_argument('--danger_q', type=float, default=5,
+    parser.add_argument('--B_w', type=float, default=10,
                         help='the influence bring by danger')
-    parser.add_argument('--sign_q', type=float, default=5,
+    parser.add_argument('--B', type=float, default=0.08,
                         help='the influence bring by signage')
-    parser.add_argument('--k', type=float, default=1, )
     parser.add_argument('--conf', type=float, default=20,
                         help='the low-bound of confidence')
     parser.add_argument('--per_dis', type=float, default=5.0,
@@ -47,15 +41,13 @@ def main():
     parser.add_argument('--filename_3_result_2', type=str, default="tests/result-3-2.npy", help='network_nodes')
     args = parser.parse_args()
 
-    # The optimization process is divided into two steps
-    # In Step 1, force field is not used
-
-
     # For parameter calibration
+    po_graph = initialize(args)
+    po_graph.printGraph(field_show=True, enviro_show=True)
 
-    # # First step:
-    # # (1) generate the possible locations of signage
-    # # (2): generate the exiting_dir
+    # The optimization process is divided into two steps:
+    # First step: (1) generate the possible locations of signage (2): generate the exiting_dir
+
     # po_graph = initialize(args)
     # # 1)
     # write_lp_1(po_graph, args)
@@ -65,9 +57,9 @@ def main():
     # po_graph.read_net(args)
     # print(np.shape(po_graph.network_matrix))
     # dijkstra = DIJKSTRA(po_graph, args)
-    # po_graph.printNetwork(net_show=True, dijkstra=False, dijkstra_path_only=False)
-    # po_graph.printNetwork(net_show=True, dijkstra=dijkstra, dijkstra_path_only=False)
-    #
+    # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=False, dijkstra_path_only=False)
+    # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=dijkstra, dijkstra_path_only=False)
+
     # # Second step: activate the necessary signage
     # po_graph = initialize(args)
     # po_graph.read_pre_results(args)
@@ -116,52 +108,52 @@ def initialize(args):
     #             ]
 
     # second condition (Museum of art PuDong 1F)
-    obs_info = [(0, 0, 0, 0.7, 22, args.obs_q),
-                (1, 0.7, 20.7, 9.3, 1.3, args.obs_q),
-                (2, 10.7, 20.7, 14.6, 1.3, args.obs_q),
-                (3, 26, 20.7, 7.3, 1.3, args.obs_q),
-                (4, 10, 11.4, 0.7, 10.6, args.obs_q),
-                (5, 25.3, 16.7, 0.7, 5.3, args.obs_q),
-                (6, 25.3, 11.4, 0.7, 3.3, args.obs_q),
-                (7, 6.7, 0, 0.7, 10.7, args.obs_q),
-                (8, 10, 10.7, 4, 0.7, args.obs_q),
-                (9, 16, 10.7, 4, 0.7, args.obs_q),
-                (10, 10, 7.4, 0.7, 3.3, args.obs_q),
-                (11, 22, 10.7, 4, 0.7, args.obs_q),
-                (12, 10, 0, 0.7, 5.4, args.obs_q),
-                (13, 7.4, 0, 2.6, 2, args.obs_q),
-                (14, 10.7, 0, 14.6, 2, args.obs_q),
-                (15, 25.3, 0, 0.7, 10.7, args.obs_q),
-                (16, 26, 0, 4, 2, args.obs_q),
-                (17, 28, 5.3, 8.6, 0.7, args.obs_q),
-                (18, 35.3, 0, 1.3, 5.3, args.obs_q),
-                (19, 35.3, 6, 1.3, 16, args.obs_q),
+    obs_info = [(0, 0, 0, 0.7, 22),
+                (1, 0.7, 20.7, 9.3, 1.3),
+                (2, 10.7, 20.7, 14.6, 1.3),
+                (3, 26, 20.7, 7.3, 1.3),
+                (4, 10, 11.4, 0.7, 10.6),
+                (5, 25.3, 16.7, 0.7, 5.3),
+                (6, 25.3, 11.4, 0.7, 3.3),
+                (7, 6.7, 0, 0.7, 10.7),
+                (8, 10, 10.7, 4, 0.7),
+                (9, 16, 10.7, 4, 0.7),
+                (10, 10, 7.4, 0.7, 3.3),
+                (11, 22, 10.7, 4, 0.7),
+                (12, 10, 0, 0.7, 5.4),
+                (13, 7.4, 0, 2.6, 2),
+                (14, 10.7, 0, 14.6, 2),
+                (15, 25.3, 0, 0.7, 10.7),
+                (16, 26, 0, 4, 2),
+                (17, 28, 5.3, 8.6, 0.7),
+                (18, 35.3, 0, 1.3, 5.3),
+                (19, 35.3, 6, 1.3, 16),
                 ]
 
     # need more information extracted from trajectory
-    ped_info = [(0, 7.5, 8.5, args.ped_q),
-                (1, 3.5, 5.5, args.ped_q),
-                (2, 15.5, 5.5, args.ped_q),
-                (3, 15.5, 12.4, args.ped_q),
-                (4, 3.5, 3.5, args.ped_q)]
+    ped_info = [(0, 7.5, 8.5),
+                (1, 3.5, 5.5),
+                (2, 15.5, 5.5),
+                (3, 15.5, 12.4),
+                (4, 3.5, 3.5)]
     # casual distribution of pedestrian no intersection with obstacles and in the range
     # num_ped =
     # ped_info = []
     # for n in range(num_ped):
     #     ped_info.append(n, x, y, args.ped_q)
 
-    exit_info = [(0, 3.7, -1, args.exit_q),
-                 (1, 32.6, -1, args.exit_q),
-                 (2, 34.3, 23, args.exit_q)]
+    exit_info = [(0, 3.7, -1),
+                 (1, 32.6, -1),
+                 (2, 34.3, 23)]
 
-    danger_info = [(0, 1, 10, args.danger_q)]
+    danger_info = [(0, 1, 10),
+                   (1, 25, 17)]
 
     # generate Po_graph
     po_graph = PO_GRAPH(dim_w=36.6, dim_l=22, gap=1)
-    po_graph.read_ObstoField(obs=obs_info, k=args.k)
-    po_graph.read_PedtoField(ped=ped_info, k=args.k)
-    po_graph.read_ExittoField(exit=exit_info, k=args.k)
-    po_graph.read_DangertoField(danger=danger_info, k=args.k)
+    # po_graph.read_ObstoField(obs=obs_info, A=args.A, B=args.B)
+    # po_graph.read_PedtoField(ped=ped_info, k=args.k)
+    po_graph.read_DEtoField(danger=danger_info, exit=exit_info, B_w=args.B_w)
     return po_graph
 
 

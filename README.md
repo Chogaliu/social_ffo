@@ -1,6 +1,16 @@
 # social_ffo
 optimization of dynamic evacuation signage system (in process)
 
+
+Still need polish:
+1) the generation of net_nodes
+   1) current: obstacles in line generate obstacle-located net_nodes
+   2) approach: re-organize the expression of obstacle in model
+2) the calculation of field 
+   1) current: directly from electric field which means unfounded
+   2) approach: transfer to the social force model formula
+      1) current velocity info is not used
+
 ![figure_field1639553515 060063](https://user-images.githubusercontent.com/80196339/146940069-056df1d1-d3d9-42b9-80ac-017b3d1cf5fe.png)
 
 ![figure_field1639553530 97403](https://user-images.githubusercontent.com/80196339/146940372-03fa19d1-afa3-4868-ae19-3700d6ddec7b.png)
