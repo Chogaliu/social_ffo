@@ -124,11 +124,19 @@ def get_poten_signs(sign_loc, value=1):
     return [k for k, v in sign_loc.items() if v == value]
 
 
-def get_utility(angle, e):
+def get_utility(x, y, m=100, a=10, b=20, c=0, d=-20):
     """
+    x = cos(angle)
+    y = e
     calculate the utility of sign a to ped in region b
+    a,b,c,d,m are the parameters setting
+    f(0,1) = a
+    f(0,-1) = b
+    f(m,1) = c
+    f(m,-1) = d
     """
-    u = (-0.6 * e + 1) * (-5 * angle + 15) + 4 * e
+    u = [(a+b)/2+y*(a-b)/2]*(x+1)+x*[[c+d-(a+b)*(m+1)]/(2*m)+y*[c-d-(a-b)*(m+1)]/(2*m)]
+    # u = (-0.6 * e + 1) * (-5 * angle + 15) + 4 * e
     return u
 
 
@@ -389,7 +397,6 @@ def get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info):
                 continue
             poten_net_nodes.append(mid_point)
     poten_net_nodes = np.unique(poten_net_nodes, axis=0)
-    print(np.shape(poten_net_nodes))
     return poten_net_nodes
 
     # # alter 3: MAKLINK DIAGRAM Remain problem ️
@@ -449,6 +456,7 @@ def get_net_links(obs_info, poten_net_nodes, args):
     matrix_temp = np.delete(matrix_temp, dele_, axis=0)
     matrix = np.delete(matrix_temp, dele_, axis=1)
     nodes = np.delete(poten_net_nodes, dele_, axis=0)
+    print(np.shape(nodes))
     np.save(args.filename_3_result_2, nodes)
     return matrix, nodes
 

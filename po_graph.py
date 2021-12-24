@@ -288,7 +288,8 @@ class PO_GRAPH:
         For debugging proposes (visualize)
         field_show: if the field is shown on map
         """
-        fig, ax = plt.subplots()
+        fig = plt.figure(figsize=(15,10))
+        ax = fig.add_subplot(1, 1, 1)
         num_node = len(self.nodes)
         obs_info = self.obs_info
         ped_info = self.ped_info
@@ -323,8 +324,14 @@ class PO_GRAPH:
                     arrowprops=dict(arrowstyle='->', color='blue', lw=1),
                     size=12,
                 )
+                plt.annotate(
+                    str(round(e,1)),
+                    xytext=(x, y),
+                    xy=(x + ix, y + iy),
+                    size=7
+                )
                 plt.scatter(x, y,
-                            s=e * 0.1,
+                            s=e * 10,
                             marker='o',
                             facecolors='blue',
                             edgecolors='blue',
@@ -390,7 +397,8 @@ class PO_GRAPH:
         net_show: if the network is shown
         dijkstra: display the dijkstra result
         """
-        fig, ax = plt.subplots()
+        fig = plt.figure(figsize=(15, 10))
+        ax = fig.add_subplot(1, 1, 1)
         obs_info = self.obs_info
         exit_info = self.exit_info
         danger_info = self.danger_info
@@ -416,7 +424,7 @@ class PO_GRAPH:
                         continue
                     link_x = [network_nodes[n][0], network_nodes[n_temp][0]]
                     link_y = [network_nodes[n][1], network_nodes[n_temp][1]]
-                    plt.plot(link_x, link_y, color='grey', linewidth=0.5, alpha=0.5)
+                    plt.plot(link_x, link_y, color='black', linewidth=0.5, alpha=0.5)
 
         # nodes print
         plt.scatter(network_nodes[:, 0], network_nodes[:, 1], marker='o', s=15, c='orange', alpha=1)
@@ -450,7 +458,8 @@ class PO_GRAPH:
         """
         show the optimized evacuation direction
         """
-        fig, ax = plt.subplots()
+        fig = plt.figure(figsize=(15, 10))
+        ax = fig.add_subplot(1, 1, 1)
         num_node = len(self.nodes)
         obs_info = self.obs_info
         ped_info = self.ped_info
