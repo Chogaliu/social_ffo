@@ -23,7 +23,7 @@ def main():
     parser.add_argument('--gap', type=float, default=2)
     parser.add_argument('--A', type=float, default=2000,
                         help='the influence bring by pedestrian')
-    parser.add_argument('--B_w', type=float, default=10,
+    parser.add_argument('--B_w', type=float, default=15,
                         help='the influence bring by danger')
     parser.add_argument('--B', type=float, default=0.08,
                         help='the influence bring by signage')
@@ -150,8 +150,8 @@ def initialize(args):
                    (1, 25, 17)]
 
     # generate Po_graph
-    po_graph = PO_GRAPH(dim_w=36.6, dim_l=22, gap=1)
-    # po_graph.read_ObstoField(obs=obs_info, A=args.A, B=args.B)
+    po_graph = PO_GRAPH(dim_w=36.6, dim_l=22, gap=0.7)
+    po_graph.read_ObstoField(obs=obs_info, A=args.A, B=args.B)
     # po_graph.read_PedtoField(ped=ped_info, k=args.k)
     po_graph.read_DEtoField(danger=danger_info, exit=exit_info, B_w=args.B_w)
     return po_graph

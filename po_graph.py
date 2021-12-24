@@ -298,10 +298,10 @@ class PO_GRAPH:
         sign_activate = self.sign_activate
 
         # environment print
-        # for obs in range(len(obs_info)):
-        #     rect = mpathes.Rectangle(obs_info[obs][1:3], obs_info[obs][3], obs_info[obs][4],
-        #                              color='black', alpha=0.5)
-        #     ax.add_patch(rect)
+        for obs in range(len(obs_info)):
+            rect = mpathes.Rectangle(obs_info[obs][1:3], obs_info[obs][3], obs_info[obs][4],
+                                     color='black', alpha=0.5)
+            ax.add_patch(rect)
 
         if enviro_show:
             # plt.scatter(ped_info[:, 1], ped_info[:, 2], c='blue', alpha=1)
