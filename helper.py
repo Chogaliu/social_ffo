@@ -17,9 +17,9 @@ def intensity_cal_d(B_w, r):
     """
     if r == 0:
         r = 1e-2
-    w = math.exp(-r/B_w)
-    v = max(1.5, w*5)
-    e = w * v/0.5
+    w = math.exp(-r / B_w)
+    v = max(1.5, w * 5)
+    e = w * v / 0.5
     return e
 
 
@@ -30,9 +30,9 @@ def intensity_cal_e(B_w, r):
     """
     if r == 0:
         r = 1e-2
-    w = math.exp(-r/B_w)
-    v = max(1.5, w*5)
-    e = (1-w) * v/0.5
+    w = math.exp(-r / B_w)
+    v = max(1.5, w * 5)
+    e = v / 0.5
     return e
 
 
@@ -42,7 +42,7 @@ def intensity_cal_o(A, B, r):
     """
     if r == 0:
         r = 1e-2
-    e = A * math.exp(-r/B)
+    e = (A / 70) * math.exp(-r / B)
     # F_sd need the individual velocity as the parameter
     # e = math.exp(r/B_sd)
     return e
@@ -322,6 +322,8 @@ def pooling_combine_id(pooled_nodes_with_id, gap_min=1.42):
     input obs_nodes_with_id array [id,x,y]
     Scene: point is infeasible due to the close distance to pass through
     monitor the close nodes from different obstacles and label them into the obstacle id
+    gap_min is the pooling distance to identify the same obstacle (different meaning from that in pooling_within)
+    Remain problem ⬆️
     return: pooled_nodes_ids
     """
     size_ = np.shape(pooled_nodes_with_id)[0]
@@ -339,6 +341,7 @@ def pooling(obs_nodes_with_id):
     # pooling_within may not necessary
     pooled_nodes_with_id = pooling_within(pooling_within(obs_nodes_with_id))
     pooled_nodes_ids = pooling_combine_id(pooled_nodes_with_id)
+    print(pooled_nodes_ids)
     return pooled_nodes_with_id, pooled_nodes_ids
 
 
@@ -353,16 +356,16 @@ def get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info):
     size_ = np.shape(pooled_nodes_with_id)[0]
     poten_net_nodes = []
     appeared = []
+    # # alter 1:  57*57
+    # for i in range(size_ - 1):
+    #     if len(pooled_nodes_ids[i]) > 1:
+    #         continue
+    #     for j in range(i + 1, size_):
+    #         if len(pooled_nodes_ids[j]) > 1:
+    #             continue
+    #
+    # alter 2:  135*135
     for i in range(size_ - 1):
-
-        # # alter 1:  57*57
-        # if len(pooled_nodes_ids[i]) > 1:
-        #     continue
-        # for j in range(i + 1, size_):
-        #     if len(pooled_nodes_ids[j]) > 1:
-        #         continue
-
-        # alter 2:  135*135
         for j in range(i + 1, size_):
             # at least one of the obstacle is not intersected with others
             if 1 not in [len(pooled_nodes_ids[i]), len(pooled_nodes_ids[j])]:
@@ -385,7 +388,36 @@ def get_poten_net_nodes(pooled_nodes_with_id, pooled_nodes_ids, obs_info):
             if check_overlap_state(obs_info, mid_point):
                 continue
             poten_net_nodes.append(mid_point)
-    return np.array(poten_net_nodes)
+    poten_net_nodes = np.unique(poten_net_nodes, axis=0)
+    print(np.shape(poten_net_nodes))
+    return poten_net_nodes
+
+    # # alter 3: MAKLINK DIAGRAM Remain problem ️
+    # for i in range(size_):
+    #     for obs_idx in range(len(obs_info)):
+    #         if obs_idx in pooled_nodes_ids[i]:
+    #             continue
+    #         d = 1e+4
+    #         d_temp = 1e+5
+    #         for j in range(size_):
+    #             if obs_idx in pooled_nodes_ids[j]:
+    #                 node_i = pooled_nodes_with_id[i][1:3]
+    #                 node_j = pooled_nodes_with_id[j][1:3]
+    #                 non_temp = list(map(int, list(set(pooled_nodes_ids[i]) | set(pooled_nodes_ids[j]))))
+    #                 obs_info_temp = np.delete(obs_info, non_temp, axis=0)
+    #                 if check_intersection_state(obs_info_temp, node_i, node_j):
+    #                     continue
+    #                 d_temp = np.linalg.norm(node_j - node_i)
+    #                 if d_temp < d:
+    #                     d = d_temp
+    #                     mid_point = (node_i + node_j) / 2
+    #                     if check_overlap_state(obs_info, mid_point):
+    #                         continue
+    #         if d_temp > d:
+    #             continue
+    #         poten_net_nodes.append(mid_point)
+    # poten_net_nodes = np.unique(poten_net_nodes, axis=0)
+    # return poten_net_nodes
 
 
 def get_net_links(obs_info, poten_net_nodes, args):

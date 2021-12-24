@@ -321,10 +321,10 @@ class PO_GRAPH:
                     xytext=(x, y),
                     xy=(x + ix, y + iy),
                     arrowprops=dict(arrowstyle='->', color='blue', lw=1),
-                    size=10,
+                    size=12,
                 )
                 plt.scatter(x, y,
-                            s=e * 5,
+                            s=e * 0.1,
                             marker='o',
                             facecolors='blue',
                             edgecolors='blue',
@@ -427,7 +427,7 @@ class PO_GRAPH:
                 path = np.zeros((n, 2))
                 for i in range(n):
                     path[i] = dijkstra.net_nodes[dijkstra_path_only[i]]
-                plt.plot(path[:, 0], path[:, 1], color='b', linewidth=0.8)
+                plt.plot(path[:, 0], path[:, 1], color='orange', linewidth=0.8)
             else:
                 for node in range(len(dijkstra.nodes)):
                     dijkstra_path = dijkstra.dijkstra_paths[node]
@@ -445,6 +445,64 @@ class PO_GRAPH:
         plt.axis('equal')
         plt.savefig('figure_network{}.png'.format(time.time()))
         # plt.show()
+
+    def printOpti(self, enviro_show=True, dijkstra=False):
+        """
+        show the optimized evacuation direction
+        """
+        fig, ax = plt.subplots()
+        num_node = len(self.nodes)
+        obs_info = self.obs_info
+        ped_info = self.ped_info
+        exit_info = self.exit_info
+        danger_info = self.danger_info
+        self.dirs = dijkstra.dirs
+        exiting_i_dirs = find_the_fittest_dirs(self)
+
+        # environment print
+        for obs in range(len(obs_info)):
+            rect = mpathes.Rectangle(obs_info[obs][1:3], obs_info[obs][3], obs_info[obs][4],
+                                     color='black', alpha=0.5)
+            ax.add_patch(rect)
+
+        if enviro_show:
+            # plt.scatter(ped_info[:, 1], ped_info[:, 2], c='blue', alpha=1)
+            plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
+            plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
+
+        for node in range(num_node):
+            node_print = self.nodes[node]
+            x = node_print.x
+            y = node_print.y
+            ix, iy = exiting_i_dirs[node]
+            plt.annotate(
+                "",
+                xytext=(x, y),
+                xy=(x + ix, y + iy),
+                arrowprops=dict(arrowstyle='->', color='orange', lw=0.8),
+                size=15,
+            )
+
+        for net_node_idx in range(len(dijkstra.nodes)):
+            x, y = dijkstra.nodes[net_node_idx]
+            ix, iy = dijkstra.dirs[net_node_idx]
+            plt.annotate(
+                "",
+                xytext=(x, y),
+                xy=(x + ix, y + iy),
+                arrowprops=dict(arrowstyle='->', color='blue', lw=0.8),
+                size=15,
+            )
+        plt.scatter(dijkstra.nodes[:, 0], dijkstra.nodes[:, 1], marker='o', s=15, c='orange', alpha=1)
+
+        x_major_locator = MultipleLocator(1)
+        y_major_locator = MultipleLocator(1)
+        ax1 = plt.gca()
+        ax1.xaxis.set_major_locator(x_major_locator)
+        ax1.yaxis.set_major_locator(y_major_locator)
+        plt.grid(True)
+        plt.axis('equal')
+        plt.savefig('figure_opt{}.png'.format(time.time()))
 
 
 class PO_NODE:

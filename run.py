@@ -21,12 +21,10 @@ def main():
     parser.add_argument('--wide', type=int, default=50)
     parser.add_argument('--length', type=int, default=50)
     parser.add_argument('--gap', type=float, default=2)
-    parser.add_argument('--A', type=float, default=2000,
-                        help='the influence bring by pedestrian')
-    parser.add_argument('--B_w', type=float, default=15,
+    parser.add_argument('--A', type=float, default=2000, )
+    parser.add_argument('--B_w', type=float, default=30,
                         help='the influence bring by danger')
-    parser.add_argument('--B', type=float, default=0.08,
-                        help='the influence bring by signage')
+    parser.add_argument('--B', type=float, default=0.08, )
     parser.add_argument('--conf', type=float, default=20,
                         help='the low-bound of confidence')
     parser.add_argument('--per_dis', type=float, default=5.0,
@@ -42,21 +40,21 @@ def main():
     args = parser.parse_args()
 
     # For parameter calibration
-    po_graph = initialize(args)
-    po_graph.printGraph(field_show=True, enviro_show=True)
+    # po_graph = initialize(args)
+    # po_graph.printGraph(field_show=True, enviro_show=True)
 
     # The optimization process is divided into two steps:
     # First step: (1) generate the possible locations of signage (2): generate the exiting_dir
 
-    # po_graph = initialize(args)
+    po_graph = initialize(args)
     # # 1)
     # write_lp_1(po_graph, args)
     # optimize_lp_1(po_graph, args)
     # po_graph.printGraph(field_show=False, enviro_show=False)
     # # 2)
-    # po_graph.read_net(args)
-    # print(np.shape(po_graph.network_matrix))
-    # dijkstra = DIJKSTRA(po_graph, args)
+    po_graph.read_net(args)
+    dijkstra = DIJKSTRA(po_graph, args)
+    po_graph.printOpti(enviro_show=False, dijkstra=dijkstra)
     # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=False, dijkstra_path_only=False)
     # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=dijkstra, dijkstra_path_only=False)
 
@@ -66,9 +64,9 @@ def main():
     # write_lp_2(po_graph, args)
     # optimize_lp_2(po_graph, args)
     # po_graph.printGraph(field_show=True, enviro_show=True)
-    # # update the e on the po_graph
-    # # po_graph.read_SigntoField(args.k, args.sign_q)
-    # # po_graph.printGraph()
+    # update the e on the po_graph
+    # po_graph.read_SigntoField(args.k, args.sign_q)
+    # po_graph.printGraph()
 
 
 def initialize(args):
@@ -147,10 +145,16 @@ def initialize(args):
                  (2, 34.3, 23)]
 
     danger_info = [(0, 1, 10),
-                   (1, 25, 17)]
+                   (1, 25, 17),
+                   (2, 25, 18),
+                   (3, 25, 16),
+                   (4, 24, 17),
+                   (5, 1, 11),
+                   (6, 1, 12),
+                   (7, 2, 11)]
 
     # generate Po_graph
-    po_graph = PO_GRAPH(dim_w=36.6, dim_l=22, gap=0.7)
+    po_graph = PO_GRAPH(dim_w=36.6, dim_l=22, gap=1)
     po_graph.read_ObstoField(obs=obs_info, A=args.A, B=args.B)
     # po_graph.read_PedtoField(ped=ped_info, k=args.k)
     po_graph.read_DEtoField(danger=danger_info, exit=exit_info, B_w=args.B_w)
@@ -247,7 +251,7 @@ def write_lp_2(po_graph, args):
         for sign in influ_signs_for_n[node]:
             sign_activate = sum(variables['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right'])
             guiding_i_dir = get_guiding_i_dir(variables, sign)
-            guiding_dir = get_guiding_dir(po_graph, node, sign, args, guiding_i_dir)
+            # guiding_dir = get_guiding_dir(po_graph, node, sign, args, guiding_i_dir)
             angle_matter_u = sum(current_i_dir * guiding_i_dir)  # [-1,1]
             # angle_matter_u = sum(current_i_dir * exiting_i_dir)  # [-1,1]
             e_matter_u = po_graph.nodes[node].e  # [?]
