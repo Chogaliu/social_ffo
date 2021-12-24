@@ -39,9 +39,9 @@ def main():
     parser.add_argument('--filename_3_result_2', type=str, default="tests/result-3-2.npy", help='network_nodes')
     args = parser.parse_args()
 
-    # For parameter calibration
-    po_graph = initialize(args)
-    po_graph.printGraph(field_show=True, enviro_show=True)
+    # # For parameter calibration
+    # po_graph = initialize(args)
+    # po_graph.printGraph(field_show=True, enviro_show=True)
 
     # The optimization process is divided into two steps:
     # First step: (1) generate the possible locations of signage (2): generate the exiting_dir

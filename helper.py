@@ -130,12 +130,12 @@ def get_utility(x, y, m=100, a=10, b=20, c=0, d=-20):
     y = e
     calculate the utility of sign a to ped in region b
     a,b,c,d,m are the parameters setting
-    f(0,1) = a
-    f(0,-1) = b
-    f(m,1) = c
-    f(m,-1) = d
+    f(1, 0) = a
+    f(-1, 0) = b
+    f(1, m) = c
+    f(-1, m) = d
     """
-    u = [(a+b)/2+y*(a-b)/2]*(x+1)+x*[[c+d-(a+b)*(m+1)]/(2*m)+y*[c-d-(a-b)*(m+1)]/(2*m)]
+    u = ((a+b)/2+x*(a-b)/2)*(y+1)+y*((c+d-(a+b)*(m+1))/(2*m)+x*(c-d-(a-b)*(m+1))/(2*m))
     # u = (-0.6 * e + 1) * (-5 * angle + 15) + 4 * e
     return u
 
