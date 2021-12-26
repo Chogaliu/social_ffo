@@ -43,6 +43,13 @@ class DIJKSTRA:
                     dis = np.linalg.norm(self.nodes[i] - self.exit_info[e, 1:3])
                     graph[i][num_nodes + e] = dis
         self.graph = graph
+
+        # count = 0
+        # for i in range(num - 1):
+        #     for j in range(i + 1, num):
+        #         if graph[i, j] != _:
+        #             count += 1
+
         self.cal_shortest()
         np.save(args.filename_3_result, self.dirs)
 

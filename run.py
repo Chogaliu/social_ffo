@@ -146,7 +146,8 @@ def initialize(args):
                  (2, 34.3, 23)]
 
     danger_info = [(0, 1, 10, 1, 3),
-                   (1, 24, 16, 1, 3)]
+                   (1, 24, 16, 1, 3)
+                   ]
 
     # generate Po_graph
     po_graph = PO_GRAPH(dim_w=36.6, dim_l=22, gap=1)

@@ -14,7 +14,7 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from mpl_toolkits.mplot3d import Axes3D
 
 angle = np.arange(-1, 1, 0.1)
-e = np.arange(0, 100, 5)
+e = np.arange(0, 10, 1)
 angle, e = np.meshgrid(angle, e)
 u = get_utility(x=angle, y=e)
 fig = plt.figure()
@@ -27,8 +27,8 @@ b = ax.contour(e, angle, u, zdir='y', stride=1, offset=1, cmap=cm.viridis)
 c = ax.contour(e, angle, u, zdir='z', stride=8, offset=-20, cmap=cm.viridis)
 
 ax.set_xlabel('e(n)')
-ax.set_xlim(0, 100)
-ax.set_xticks(np.arange(0, 100, 20))
+ax.set_xlim(0, 10)
+ax.set_xticks(np.arange(0, 10, 1))
 ax.set_ylabel('cos<d(f)∙d(n)>')
 ax.set_ylim(-1, 1)
 ax.set_yticks(np.arange(-1, 1, 1))
