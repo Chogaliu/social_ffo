@@ -40,31 +40,31 @@ def main():
     parser.add_argument('--filename_3_result_2', type=str, default="tests/result-3-2.npy", help='network_nodes')
     args = parser.parse_args()
 
-    # For parameter calibration
-    po_graph = initialize(args)
-    po_graph.printGraph(field_show=True, enviro_show=True)
+    # # For parameter calibration
+    # po_graph = initialize(args)
+    # po_graph.printGraph(field_show=True, enviro_show=True)
 
     # The optimization process is divided into two steps:
-    # First step: (1) generate the possible locations of signage (2): generate the exiting_dir
 
+    # # First step: (1) generate the possible locations of signage (2): generate the exiting_dir
     # po_graph = initialize(args)
     # # 1)
     # write_lp_1(po_graph, args)
     # optimize_lp_1(po_graph, args)
-    # po_graph.printGraph(field_show=False, enviro_show=False)
+    # po_graph.printGraph(field_show=True, enviro_show=True)
     # # 2)
     # po_graph.read_net(args)
     # dijkstra = DIJKSTRA(po_graph, args)
-    # po_graph.printOpti(enviro_show=False, dijkstra=dijkstra)
-    # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=False, dijkstra_path_only=False)
-    # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=dijkstra, dijkstra_path_only=False)
+    # # po_graph.printOpti(enviro_show=False, dijkstra=dijkstra)
+    # # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=False, dijkstra_path_only=False)
+    # # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=dijkstra, dijkstra_path_only=False)
 
-    # # Second step: activate the necessary signage
-    # po_graph = initialize(args)
-    # po_graph.read_pre_results(args)
-    # write_lp_2(po_graph, args)
-    # optimize_lp_2(po_graph, args)
-    # po_graph.printGraph(field_show=True, enviro_show=False)
+    # Second step: activate the necessary signage
+    po_graph = initialize(args)
+    po_graph.read_pre_results(args)
+    write_lp_2(po_graph, args)
+    optimize_lp_2(po_graph, args)
+    po_graph.printGraph(field_show=True, enviro_show=True)
 
     # # update the e on the po_graph
     # po_graph.read_SigntoField(args.k, args.sign_q)
@@ -146,7 +146,8 @@ def initialize(args):
                  (2, 34.3, 23)]
 
     danger_info = [(0, 1, 10, 1, 3),
-                   (1, 24, 16, 1, 3)
+                   (1, 24, 16, 1, 3),
+                   (2, 32, 7, 3, 1)
                    ]
 
     # generate Po_graph

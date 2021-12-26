@@ -149,7 +149,7 @@ def get_utility(x, y, m=10, a=10, b=20, c=0, d=-20):
     f(-1, m) = d
     """
     u = ((a + b) / 2 + x * (a - b) / 2) * (y + 1) + y * (
-                (c + d - (a + b) * (m + 1)) / (2 * m) + x * (c - d - (a - b) * (m + 1)) / (2 * m))
+            (c + d - (a + b) * (m + 1)) / (2 * m) + x * (c - d - (a - b) * (m + 1)) / (2 * m))
     # u = (-0.6 * e + 1) * (-5 * angle + 15) + 4 * e
     return u
 
@@ -504,11 +504,15 @@ def optimize_lp_2(po_graph, args):
     model.optimize()
     print("Objective:", model.objVal)
     sign_activate = {}
+    u_record = {}
     for i in model.getVars():
         print("Parameter:", i.varname, "=", i.x)
+        if 'u' in i.varname:
+            u_record[i.varname] = i.x
         if 's' in i.varname:
             sign_activate[i.varname] = i.x
     po_graph.sign_activate = sign_activate
     np.save(args.filename_2_result, sign_activate)
+    np.save("tests/result_ana.npy", u_record)
 
     return sign_activate
