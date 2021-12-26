@@ -20,13 +20,14 @@ def intensity_cal_d(B_w, r):
     w = math.exp(-r / B_w)
     v = max(1.5, w * 5)
     e = w * v / 0.5
-    return e
+    return e, v
 
 
 def intensity_cal_e(B_w, r):
     """
     exit
     r: the shortest distance from the cloest DH
+    Problem：
     """
     if r == 0:
         r = 1e-2
@@ -43,6 +44,18 @@ def intensity_cal_o(A, B, r):
     if r == 0:
         r = 1e-2
     e = (A / 70) * math.exp(-r / B)
+    # F_sd need the individual velocity as the parameter
+    # e = math.exp(r/B_sd)
+    return e
+
+
+def intensity_cal_o_1(v_d, B_sd, r):
+    """
+    rigid obstacle - along the surface
+    """
+    if r == 0:
+        r = 1e-2
+    e = (v_d / 0.5) * math.exp(-r / B_sd)
     # F_sd need the individual velocity as the parameter
     # e = math.exp(r/B_sd)
     return e
@@ -124,7 +137,7 @@ def get_poten_signs(sign_loc, value=1):
     return [k for k, v in sign_loc.items() if v == value]
 
 
-def get_utility(x, y, m=100, a=10, b=20, c=0, d=-20):
+def get_utility(x, y, m=10, a=10, b=20, c=0, d=-20):
     """
     x = cos(angle)
     y = e
@@ -135,7 +148,8 @@ def get_utility(x, y, m=100, a=10, b=20, c=0, d=-20):
     f(1, m) = c
     f(-1, m) = d
     """
-    u = ((a+b)/2+x*(a-b)/2)*(y+1)+y*((c+d-(a+b)*(m+1))/(2*m)+x*(c-d-(a-b)*(m+1))/(2*m))
+    u = ((a + b) / 2 + x * (a - b) / 2) * (y + 1) + y * (
+                (c + d - (a + b) * (m + 1)) / (2 * m) + x * (c - d - (a - b) * (m + 1)) / (2 * m))
     # u = (-0.6 * e + 1) * (-5 * angle + 15) + 4 * e
     return u
 

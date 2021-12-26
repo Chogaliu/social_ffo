@@ -184,7 +184,7 @@ class PO_GRAPH:
     #         if list(temp_inten) != [0., 0.]:
     #             self.nodes[node].addInten(temp_inten)
 
-    def read_DEtoField(self, danger, exit, B_w):
+    def read_ODtoField(self, danger, exit, B_w, B_sd):
         """
         danger_info:
         [danger_id, d_x, d_y]
@@ -201,52 +201,86 @@ class PO_GRAPH:
         self.exit_info = np.array(exit)
         danger_info = self.danger_info
         exit_info = self.exit_info
+        obs_info = self.obs_info
         for node in range(len(self.nodes)):
             x = self.nodes[node].x
             y = self.nodes[node].y
             temp_inten = np.array([0, 0], dtype=float)
-            # danger calculation
-            r_shortest = float('inf')
-            Dis = np.array([0, 0])
-            for n in range(len(danger_info)):
-                danger_x, danger_y = danger_info[n][1], danger_info[n][2]
-                dis = np.array([x - danger_x, y - danger_y])
-                d = np.linalg.norm(dis)
-                if d < r_shortest:
-                    r_shortest = d
-                if d == 0:
-                    e_1 = intensity_cal_e(B_w, d)
-                    self.nodes[node].addInten1(e_1)
-                    continue
-                e = intensity_cal_e(B_w, r_shortest)
-                temp_inten += np.array([e * (dis[0] / d), e * (dis[1] / d)])
+            v_d=1e-2
 
+            # danger calculation
+            # Problem: it's better to use area instead of point to descirble danger
+            for n in range(len(danger_info)):
+                r_shortest = float('inf')
+                Dis = np.array([0.0, 0.0])
+                # Problem： no consideration for large area
                 danger_x, danger_y = danger_info[n][1], danger_info[n][2]
-                dis = np.array([x - danger_x, y - danger_y])
-                d = np.linalg.norm(dis)
-                if d < r_shortest:
-                    r_shortest = d
-            D = np.linalg.norm(Dis)
-            if D == 0 or r_shortest == 0:
-                var = 1e-2
-                e_1 = intensity_cal_d(B_w, var)
-                self.nodes[node].addInten1(e_1)
-            else:
-                e = intensity_cal_d(B_w, r_shortest)
-                temp_inten += np.array([e * (Dis[0] / D), e * (Dis[1] / D)])
-            # exit calculation
-            for n in range(len(exit_info)):
-                exit_x, exit_y = exit_info[n][1], exit_info[n][2]
-                dis = np.array([exit_x - x, exit_y - y])
-                d = np.linalg.norm(dis)
-                if d == 0:
-                    e_1 = intensity_cal_e(B_w, r_shortest)
+                danger_w, danger_l= danger_info[n][3], danger_info[n][4]
+                danger_point_x, danger_point_y = danger_x+danger_w/2, danger_y+danger_l/2
+                    # dis = np.array([x-danger_x, y-danger_y])
+                    # d = np.linalg.norm(dis)
+                    # if d < r_shortest:
+                    #     r_shortest = d
+                    # if d == 0:
+                    # #     e_1 = intensity_cal_d(B_w, d)
+                    #     # self.nodes[node].addInten1(e_1)
+                    #     continue
+                    # # e = intensity_cal_d(B_w, r_shortest)
+                    # Dis += dis/d
+                    # # temp_inten += np.array([e * (dis[0] / d), e * (dis[1] / d)])
+                Dis = np.array([x-danger_point_x, y-danger_point_y])
+                D = np.linalg.norm(Dis)
+                e_1, v = intensity_cal_d(B_w, D)
+                if v > v_d:
+                    v_d = v
+                if D == 0:
                     self.nodes[node].addInten1(e_1)
-                    continue
-                e = intensity_cal_e(B_w, r_shortest)
-                temp_inten += np.array([e * (dis[0] / d), e * (dis[1] / d)])
+                else:
+                    temp_inten += np.array([e_1 * (Dis[0] / D), e_1 * (Dis[1] / D)])
+
+                temp_inten_danger = temp_inten
+
+            # obstalce-along_surface calculation
+            for n in range(len(obs_info)):
+                obs_w, obs_l = obs_info[n][3:5]
+                obs_x, obs_y = obs_info[n][1:3]
+                if obs_x <= x <= obs_x + obs_w:
+                    if y > obs_y + obs_l:
+                        if -temp_inten_danger[0]>=0:
+                            temp_inten += np.array([-intensity_cal_o_1(v_d, B_sd, y - (obs_y + obs_l)), 0])
+                        else:
+                            temp_inten += np.array([intensity_cal_o_1(v_d, B_sd, y - (obs_y + obs_l)), 0])
+                    elif y < obs_y:
+                        if temp_inten_danger[0]>=0:
+                            temp_inten += np.array([intensity_cal_o_1(v_d, B_sd, obs_y - y), 0])
+                        else:
+                            temp_inten += np.array([-intensity_cal_o_1(v_d, B_sd, obs_y - y), 0])
+                if obs_y <= y <= obs_y + obs_l:
+                    if x > obs_x + obs_w:
+                        if temp_inten_danger[1]>=0:
+                            temp_inten += np.array([0, intensity_cal_o_1(v_d, B_sd, x - (obs_x + obs_w))])
+                        else:
+                            temp_inten += np.array([0, -intensity_cal_o_1(v_d, B_sd, x - (obs_x + obs_w))])
+                    elif x < obs_x:
+                        if -temp_inten_danger[1]>=0:
+                            temp_inten += np.array([0, -intensity_cal_o_1(v_d, B_sd, obs_x - x)])
+                        else:
+                            temp_inten += np.array([0, intensity_cal_o_1(v_d, B_sd, obs_x - x)])
+
             if list(temp_inten) != [0., 0.]:
                 self.nodes[node].addInten(temp_inten)
+            # # exit calculation
+            # for n in range(len(exit_info)):
+            #     exit_x, exit_y = exit_info[n][1], exit_info[n][2]
+            #     dis = np.array([exit_x - x, exit_y - y])
+            #     d = np.linalg.norm(dis)
+            #     if d == 0:
+            #         e_1 = intensity_cal_e(B_w, r_shortest)
+            #         self.nodes[node].addInten1(e_1)
+            #         continue
+            #     e = intensity_cal_e(B_w, r_shortest)
+            #     temp_inten += np.array([e * (dis[0] / d), e * (dis[1] / d)])
+
 
     # def read_SigntoField(self, k, q):
     #     """
@@ -307,7 +341,10 @@ class PO_GRAPH:
         if enviro_show:
             # plt.scatter(ped_info[:, 1], ped_info[:, 2], c='blue', alpha=1)
             plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
-            plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
+            for danger in range(len(danger_info)):
+                rect = mpathes.Rectangle(danger_info[danger][1:3], danger_info[danger][3], danger_info[danger][4],
+                                         color='red', alpha=0.5)
+                ax.add_patch(rect)
 
         # E & signage print
         for node in range(num_node):
@@ -358,14 +395,20 @@ class PO_GRAPH:
                 dir_sign = [1, 0]
             # print the sign_direct on the map
             if dir_sign != [0, 0]:
-                plt.scatter(x, y, c='red', alpha=1)
+                plt.scatter(x, y, c='green', alpha=1)
                 plt.annotate(
                     "",
                     xytext=(x, y),
-                    xy=(x + dir_sign[0] * 5, y + dir_sign[1] * 5),
-                    arrowprops=dict(arrowstyle='->', color='red', lw=1),
-                    size=10,
+                    xy=(x + dir_sign[0] * 1, y + dir_sign[1] * 1),
+                    arrowprops=dict(arrowstyle='->', color='green', lw=2),
+                    size=12,
                 )
+                plt.scatter(x, y,
+                            s=5e+4,
+                            marker='o',
+                            facecolors='green',
+                            # edgecolors='red',
+                            alpha=0.2)
             # # print the E condition after signage application
             # plt.annotate(
             #     "",
@@ -414,7 +457,10 @@ class PO_GRAPH:
 
         if enviro_show:
             plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
-            plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
+            for danger in range(len(danger_info)):
+                rect = mpathes.Rectangle(danger_info[danger][1:3], danger_info[danger][3], danger_info[danger][4],
+                                         color='red', alpha=0.5)
+                ax.add_patch(rect)
 
         # links print with network_matrix
         if net_show:
@@ -477,7 +523,10 @@ class PO_GRAPH:
         if enviro_show:
             # plt.scatter(ped_info[:, 1], ped_info[:, 2], c='blue', alpha=1)
             plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
-            plt.scatter(danger_info[:, 1], danger_info[:, 2], c='red', alpha=1)
+            for danger in range(len(danger_info)):
+                rect = mpathes.Rectangle(danger_info[danger][1:3], danger_info[danger][3], danger_info[danger][4],
+                                         color='red', alpha=0.5)
+                ax.add_patch(rect)
 
         for node in range(num_node):
             node_print = self.nodes[node]

@@ -22,8 +22,9 @@ def main():
     parser.add_argument('--length', type=int, default=50)
     parser.add_argument('--gap', type=float, default=2)
     parser.add_argument('--A', type=float, default=2000, )
-    parser.add_argument('--B_w', type=float, default=30,
+    parser.add_argument('--B_w', type=float, default=20,
                         help='the influence bring by danger')
+    parser.add_argument('--B_sd', type=float, default=0.1,)
     parser.add_argument('--B', type=float, default=0.08, )
     parser.add_argument('--conf', type=float, default=20,
                         help='the low-bound of confidence')
@@ -39,9 +40,9 @@ def main():
     parser.add_argument('--filename_3_result_2', type=str, default="tests/result-3-2.npy", help='network_nodes')
     args = parser.parse_args()
 
-    # # For parameter calibration
-    # po_graph = initialize(args)
-    # po_graph.printGraph(field_show=True, enviro_show=True)
+    # For parameter calibration
+    po_graph = initialize(args)
+    po_graph.printGraph(field_show=True, enviro_show=True)
 
     # The optimization process is divided into two steps:
     # First step: (1) generate the possible locations of signage (2): generate the exiting_dir
@@ -58,12 +59,12 @@ def main():
     # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=False, dijkstra_path_only=False)
     # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=dijkstra, dijkstra_path_only=False)
 
-    # Second step: activate the necessary signage
-    po_graph = initialize(args)
-    po_graph.read_pre_results(args)
-    write_lp_2(po_graph, args)
-    optimize_lp_2(po_graph, args)
-    po_graph.printGraph(field_show=True, enviro_show=True)
+    # # Second step: activate the necessary signage
+    # po_graph = initialize(args)
+    # po_graph.read_pre_results(args)
+    # write_lp_2(po_graph, args)
+    # optimize_lp_2(po_graph, args)
+    # po_graph.printGraph(field_show=True, enviro_show=False)
 
     # # update the e on the po_graph
     # po_graph.read_SigntoField(args.k, args.sign_q)
@@ -144,20 +145,14 @@ def initialize(args):
                  (1, 32.6, -1),
                  (2, 34.3, 23)]
 
-    danger_info = [(0, 1, 10),
-                   (1, 25, 17),
-                   (2, 25, 18),
-                   (3, 25, 16),
-                   (4, 24, 17),
-                   (5, 1, 11),
-                   (6, 1, 12),
-                   (7, 2, 11)]
+    danger_info = [(0, 1, 10, 1, 3),
+                   (1, 24, 16, 1, 3)]
 
     # generate Po_graph
     po_graph = PO_GRAPH(dim_w=36.6, dim_l=22, gap=1)
     po_graph.read_ObstoField(obs=obs_info, A=args.A, B=args.B)
+    po_graph.read_ODtoField(danger=danger_info, exit=exit_info, B_w=args.B_w, B_sd=args.B_sd)
     # po_graph.read_PedtoField(ped=ped_info, k=args.k)
-    po_graph.read_DEtoField(danger=danger_info, exit=exit_info, B_w=args.B_w)
     return po_graph
 
 
