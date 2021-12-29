@@ -502,6 +502,7 @@ def optimize_lp_2(po_graph, args):
     """
     model = read(args.filename_2)
     model.optimize()
+    print(model.Runtime)
     print("Objective:", model.objVal)
     sign_activate = {}
     u_record = {}
