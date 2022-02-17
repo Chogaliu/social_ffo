@@ -16,7 +16,8 @@ ax2 = ax1.twinx()  # twinx将ax1的X轴共用与ax2，这步很重要
 ax2.plot(x, y1, marker='*', ms=10, c='orange')
 ax2.set_ylabel("Number of activated signs")
 ax1.set_xlabel("m")
-plt.legend()
+ax1.legend(["Utility"],loc=4)
+ax2.legend(["Activated signs number"],loc=2)
 plt.show()
 
 
