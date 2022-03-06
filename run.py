@@ -29,7 +29,11 @@ def main():
     parser.add_argument('--conf', type=float, default=20,
                         help='the low-bound of confidence')
     parser.add_argument('--per_dis', type=float, default=5.0,
-                        help='the perception range of pedestrian')
+                        help='the sign influ range of pedestrian')
+    parser.add_argument('--h_range', type=float, default=10.0,
+                        help='the herding influ range')
+    parser.add_argument('--c_range', type=float, default=20,
+                        help='the congestion influ range (not required)')
     parser.add_argument('--filename_1', type=str, default="tests/test-1.lp")
     parser.add_argument('--filename_2', type=str, default="tests/test-2.lp")
     parser.add_argument('--filename_3', type=str, default="tests/test-3.lp")
@@ -130,11 +134,11 @@ def initialize(args):
                 ]
 
     # need more information extracted from trajectory
-    ped_info = [(0, 7.5, 8.5),
-                (1, 3.5, 5.5),
-                (2, 15.5, 5.5),
-                (3, 15.5, 12.4),
-                (4, 3.5, 3.5)]
+    ped_info = [(0, 7.5, 8.5, 0, 1),
+                (1, 3.5, 5.5, 0, 1),
+                (2, 15.5, 5.5, 1, 0),
+                (3, 15.5, 12.4, -1, 0),
+                (4, 3.5, 3.5, -1, 0)]
     # casual distribution of pedestrian no intersection with obstacles and in the range
     # num_ped =
     # ped_info = []
@@ -154,7 +158,7 @@ def initialize(args):
     po_graph = PO_GRAPH(dim_w=36.6, dim_l=22, gap=1)
     po_graph.read_ObstoField(obs=obs_info, A=args.A, B=args.B)
     po_graph.read_ODtoField(danger=danger_info, exit=exit_info, B_w=args.B_w, B_sd=args.B_sd)
-    # po_graph.read_PedtoField(ped=ped_info, k=args.k)
+    po_graph.read_PedtoField(ped=ped_info, A=args.A, B=args.B, herd_range=args.h_range)
     return po_graph
 
 

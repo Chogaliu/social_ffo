@@ -10,7 +10,7 @@ from gurobipy import *
 from tqdm import tqdm
 
 
-def intensity_cal_d(B_w, r):
+def influ_cal_d(B_w, r):
     """
     danger source
     r: the shortest distance from the cloest DH
@@ -23,7 +23,7 @@ def intensity_cal_d(B_w, r):
     return e, v
 
 
-def intensity_cal_e(B_w, r):
+def influ_cal_e(B_w, r):
     """
     exit
     r: the shortest distance from the cloest DH
@@ -37,38 +37,42 @@ def intensity_cal_e(B_w, r):
     return e
 
 
-def intensity_cal_o(A, B, r):
+def influ_cal_o(A, B, r):
     """
-    rigid obstacle
+    rigid obstacle - repulsive
     """
     if r == 0:
         r = 1e-2
     e = (A / 70) * math.exp(-r / B)
-    # F_sd need the individual velocity as the parameter
-    # e = math.exp(r/B_sd)
     return e
 
 
-def intensity_cal_o_1(v_d, B_sd, r):
+def influ_cal_o_1(v_d, B_sd, r):
     """
     rigid obstacle - along the surface
     """
     if r == 0:
         r = 1e-2
     e = (v_d / 0.5) * math.exp(-r / B_sd)
-    # F_sd need the individual velocity as the parameter
-    # e = math.exp(r/B_sd)
     return e
 
 
-# def intensity_cal_h(k, q, r):
-#     """
-#     herding
-#     """
-#     if r == 0:
-#         r = 1e-2
-#
-#     return e
+def influ_cal_p(A, B, r):
+    """
+    pedestrian - repulsive
+    """
+    if r == 0:
+        r = 1e-2
+    e = (A / 70) * math.exp(-r / B)
+    return e
+
+
+def influ_cal_h(ped_iv, ped_iu):
+    """
+    pedestrian - herding
+    """
+    e_dir = 1 * np.array([ped_iv, ped_iu])
+    return e_dir
 
 
 def cal_var(variables, node, current_idir, guiding_dir):

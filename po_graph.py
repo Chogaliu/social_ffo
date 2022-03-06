@@ -116,8 +116,9 @@ class PO_GRAPH:
     def read_ObstoField(self, obs, A, B):
         """
         obs_info: lists of list of numpy array, each numpy array corresponds to an obstacle)
-        [obs_id,lb_x,lb_y,o_w,o_l,o_q]
+        [obs_id,lb_x,lb_y,o_w,o_l]
         also delete the occupied node
+        *** prior implementation required
         return:
         # two ways to conduct:
         1.differentiable：every place
@@ -135,17 +136,17 @@ class PO_GRAPH:
                 obs_x, obs_y = obs_info[n][1:3]
                 if obs_x <= x <= obs_x + obs_w:
                     if y > obs_y + obs_l:
-                        temp_inten += np.array([0, intensity_cal_o(A, B, y - (obs_y + obs_l))])
+                        temp_inten += np.array([0, influ_cal_o(A, B, y - (obs_y + obs_l))])
                     elif y < obs_y:
-                        temp_inten += np.array([0, -intensity_cal_o(A, B, obs_y - y)])
+                        temp_inten += np.array([0, -influ_cal_o(A, B, obs_y - y)])
                     else:
                         dele_node.append(node)
                         break
                 if obs_y <= y <= obs_y + obs_l:
                     if x > obs_x + obs_w:
-                        temp_inten += np.array([intensity_cal_o(A, B, x - (obs_x + obs_w)), 0])
+                        temp_inten += np.array([influ_cal_o(A, B, x - (obs_x + obs_w)), 0])
                     elif x < obs_x:
-                        temp_inten += np.array([-intensity_cal_o(A, B, obs_x - x), 0])
+                        temp_inten += np.array([-influ_cal_o(A, B, obs_x - x), 0])
                     else:
                         dele_node.append(node)
                         break
@@ -156,33 +157,44 @@ class PO_GRAPH:
             index = index - counter
             self.nodes.pop(index)
 
-    # def read_PedtoField(self, ped, k):
-    #     """
-    #     ped_info: lists of list of numpy array, each numpy array corresponds to a pedestrian
-    #     [ped_id,p_x,p_y,p_q]
-    #     return:
-
-    #     """
-    #     self.ped_info = np.array(ped)
-    #     ped_info = self.ped_info
-    #     for node in range(len(self.nodes)):
-    #         x = self.nodes[node].x
-    #         y = self.nodes[node].y
-    #         temp_inten = np.array([0, 0], dtype=float)
-    #         for n in range(len(ped_info)):
-    #             ped_x, ped_y = ped_info[n][1], ped_info[n][2]
-    #             ped_q = ped_info[n][3]
-    #             dis = np.array([x - ped_x, y - ped_y])
-    #             d = np.linalg.norm(dis)
-    #             if d == 0:
-    #                 var = 1e-2
-    #                 e_1 = inten_cal(k, ped_q, var)
-    #                 self.nodes[node].addInten1(e_1)
-    #                 continue
-    #             e = inten_cal(k, ped_q, d)
-    #             temp_inten += np.array([e * (dis[0] / d), e * (dis[1] / d)])
-    #         if list(temp_inten) != [0., 0.]:
-    #             self.nodes[node].addInten(temp_inten)
+    def read_PedtoField(self, ped, A, B, herd_range, congest_range=None):
+        """
+        ped_info: lists of list of numpy array, each numpy array corresponds to a pedestrian
+        [ped_id,p_x,p_y,p_iv,p_iu] without consideration of velocity value
+        1. the repulsive force
+        2. the herding influ with herd_range
+        return:
+        """
+        self.ped_info = np.array(ped)
+        ped_info = self.ped_info
+        obs_info = self.obs_info
+        for node in range(len(self.nodes)):
+            x = self.nodes[node].x
+            y = self.nodes[node].y
+            node_loc = np.array([x,y])
+            temp_inten = np.array([0, 0], dtype=float)
+            temp_inten_h = np.array([0, 0], dtype=float)
+            for i in range(len(ped_info)):
+                ped_x, ped_y = ped_info[i][1], ped_info[i][2]
+                ped_iv, ped_iu = ped_info[i][3], ped_info[i][4]
+                ped_loc = np.array([ped_x,ped_y])
+                # make sure the pedestrian i's behavior can be percepted by the peds located in node
+                if check_intersection_state(obs_info, node_loc, ped_loc):
+                    continue
+                dis = np.array([x - ped_x, y - ped_y])
+                d = np.linalg.norm(dis)
+                if d <= herd_range:
+                    # Superposition of direction
+                    temp_inten_h += influ_cal_h(ped_iv,ped_iu)
+                e_1 = influ_cal_p(A, B, d)
+                if d == 0:
+                    self.nodes[node].addInten1(e_1)
+                    continue
+                temp_inten += np.array([e_1 * (dis[0] / d), e_1 * (dis[1] / d)])
+            if list(temp_inten) != [0., 0.]:
+                self.nodes[node].addInten(temp_inten)
+            if list(temp_inten_h) != [0., 0.]:
+                self.nodes[node].addInten(temp_inten_h)
 
     def read_ODtoField(self, danger, exit, B_w, B_sd):
         """
@@ -192,10 +204,7 @@ class PO_GRAPH:
         [exit_id, e_x, e_y]
         return:
         # problem:
-        no expected velocity & current velocity considered
-        # problem:
         # assume there is no eyesight limitation which is unrealized
-        # congestion avoidance + herding influence
         """
         self.danger_info = np.array(danger)
         self.exit_info = np.array(exit)
@@ -222,15 +231,15 @@ class PO_GRAPH:
                     # if d < r_shortest:
                     #     r_shortest = d
                     # if d == 0:
-                    # #     e_1 = intensity_cal_d(B_w, d)
+                    # #     e_1 = influ_cal_d(B_w, d)
                     #     # self.nodes[node].addInten1(e_1)
                     #     continue
-                    # # e = intensity_cal_d(B_w, r_shortest)
+                    # # e = influ_cal_d(B_w, r_shortest)
                     # Dis += dis/d
                     # # temp_inten += np.array([e * (dis[0] / d), e * (dis[1] / d)])
                 Dis = np.array([x-danger_point_x, y-danger_point_y])
                 D = np.linalg.norm(Dis)
-                e_1, v = intensity_cal_d(B_w, D)
+                e_1, v = influ_cal_d(B_w, D)
                 if v > v_d:
                     v_d = v
                 if D == 0:
@@ -247,25 +256,25 @@ class PO_GRAPH:
                 if obs_x <= x <= obs_x + obs_w:
                     if y > obs_y + obs_l:
                         if -temp_inten_danger[0]>=0:
-                            temp_inten += np.array([-intensity_cal_o_1(v_d, B_sd, y - (obs_y + obs_l)), 0])
+                            temp_inten += np.array([-influ_cal_o_1(v_d, B_sd, y - (obs_y + obs_l)), 0])
                         else:
-                            temp_inten += np.array([intensity_cal_o_1(v_d, B_sd, y - (obs_y + obs_l)), 0])
+                            temp_inten += np.array([influ_cal_o_1(v_d, B_sd, y - (obs_y + obs_l)), 0])
                     elif y < obs_y:
                         if temp_inten_danger[0]>=0:
-                            temp_inten += np.array([intensity_cal_o_1(v_d, B_sd, obs_y - y), 0])
+                            temp_inten += np.array([influ_cal_o_1(v_d, B_sd, obs_y - y), 0])
                         else:
-                            temp_inten += np.array([-intensity_cal_o_1(v_d, B_sd, obs_y - y), 0])
+                            temp_inten += np.array([-influ_cal_o_1(v_d, B_sd, obs_y - y), 0])
                 if obs_y <= y <= obs_y + obs_l:
                     if x > obs_x + obs_w:
                         if temp_inten_danger[1]>=0:
-                            temp_inten += np.array([0, intensity_cal_o_1(v_d, B_sd, x - (obs_x + obs_w))])
+                            temp_inten += np.array([0, influ_cal_o_1(v_d, B_sd, x - (obs_x + obs_w))])
                         else:
-                            temp_inten += np.array([0, -intensity_cal_o_1(v_d, B_sd, x - (obs_x + obs_w))])
+                            temp_inten += np.array([0, -influ_cal_o_1(v_d, B_sd, x - (obs_x + obs_w))])
                     elif x < obs_x:
                         if -temp_inten_danger[1]>=0:
-                            temp_inten += np.array([0, -intensity_cal_o_1(v_d, B_sd, obs_x - x)])
+                            temp_inten += np.array([0, -influ_cal_o_1(v_d, B_sd, obs_x - x)])
                         else:
-                            temp_inten += np.array([0, intensity_cal_o_1(v_d, B_sd, obs_x - x)])
+                            temp_inten += np.array([0, influ_cal_o_1(v_d, B_sd, obs_x - x)])
 
             if list(temp_inten) != [0., 0.]:
                 self.nodes[node].addInten(temp_inten)
@@ -275,10 +284,10 @@ class PO_GRAPH:
             #     dis = np.array([exit_x - x, exit_y - y])
             #     d = np.linalg.norm(dis)
             #     if d == 0:
-            #         e_1 = intensity_cal_e(B_w, r_shortest)
+            #         e_1 = influ_cal_e(B_w, r_shortest)
             #         self.nodes[node].addInten1(e_1)
             #         continue
-            #     e = intensity_cal_e(B_w, r_shortest)
+            #     e = influ_cal_e(B_w, r_shortest)
             #     temp_inten += np.array([e * (dis[0] / d), e * (dis[1] / d)])
 
 
