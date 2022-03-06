@@ -347,15 +347,26 @@ class PO_GRAPH:
                                      color='black', alpha=0.5)
             ax.add_patch(rect)
 
+        for ped in range(len(ped_info)):
+            x, y = ped_info[ped][1], ped_info[ped][2]
+            iv, iu = ped_info[ped][3], ped_info[ped][4]
+            plt.scatter(x, y, c='orange', alpha=1)
+            plt.annotate(
+                "",
+                xytext=(x, y),
+                xy=(x + iv, y + iu),
+                arrowprops=dict(arrowstyle='->', color='orange', lw=1),
+                size=12,
+            )
+
         if enviro_show:
-            # plt.scatter(ped_info[:, 1], ped_info[:, 2], c='blue', alpha=1)
             plt.scatter(exit_info[:, 1], exit_info[:, 2], c='green', alpha=1)
             for danger in range(len(danger_info)):
                 rect = mpathes.Rectangle(danger_info[danger][1:3], danger_info[danger][3], danger_info[danger][4],
                                          color='red', alpha=0.5)
                 ax.add_patch(rect)
 
-        # E & signage print
+        # E & settled signage & activate signage print
         for node in range(num_node):
             node_print = self.nodes[node]
             x = node_print.x
@@ -386,10 +397,9 @@ class PO_GRAPH:
             if sign_loc_info == 0:
                 continue
 
-            if sign_loc_info[node] == 1.0:
-                plt.scatter(x, y, c='black', alpha=1.0)
-            else:
+            if sign_loc_info[node] != 1.0:
                 continue
+            plt.scatter(x, y, c='black', alpha=1.0)
 
             if sign_activate == 0:
                 continue
