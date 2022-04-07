@@ -320,6 +320,25 @@ def generate_dist_matrix_ns(po_graph, args):
     return dist_matrix_ns
 
 
+def generate_dist_matrix_nd(po_graph, args):
+    """
+    generate the relationship between node and danger
+    return: dist_matrix_nd[node, danger]=0/1 1:the node can be strongly influenced by danger
+    """
+    num_node = len(po_graph.nodes)
+    num_danger = len(po_graph.danger_info)
+    dist_matrix_nd = np.ones((num_node, num_danger))
+    for node in tqdm(range(num_node - 1)):
+        for danger in range(num_danger):
+            node_loc = np.array([po_graph.nodes[node].x, po_graph.nodes[node].y])
+            danger_loc = np.array([po_graph.danger_info[danger][1]+po_graph.danger_info[danger][3]/2,
+                                   po_graph.danger_info[danger][2]+po_graph.danger_info[danger][4]/2])
+            dis_nd = np.linalg.norm(node_loc - danger_loc)
+            if dis_nd > 15:
+                dist_matrix_nd[node, danger] = 0
+    return dist_matrix_nd
+
+
 def pooling_within(obs_nodes_with_id, gap_min=1.42):
     """
     input obs_nodes_with_id array [id,x,y]

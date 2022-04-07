@@ -1,9 +1,10 @@
-'''
+"""
 solve the model(.lp)
 
 Author: Qiujia Liu
 Data: 25th August 2021
-'''
+"""
+
 import cplex
 from gurobipy import *
 

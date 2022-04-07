@@ -24,7 +24,7 @@ def main():
     parser.add_argument('--A', type=float, default=2000, )
     parser.add_argument('--B_w', type=float, default=20,
                         help='the influence bring by danger')
-    parser.add_argument('--B_sd', type=float, default=0.1,)
+    parser.add_argument('--B_sd', type=float, default=0.1, )
     parser.add_argument('--B', type=float, default=0.08, )
     parser.add_argument('--conf', type=float, default=20,
                         help='the low-bound of confidence')
@@ -34,35 +34,31 @@ def main():
                         help='the herding influ range')
     parser.add_argument('--c_range', type=float, default=20,
                         help='the congestion influ range (not required)')
-    parser.add_argument('--filename_1', type=str, default="tests/test-1.lp")
-    parser.add_argument('--filename_2', type=str, default="tests/test-2.lp")
-    parser.add_argument('--filename_3', type=str, default="tests/test-3.lp")
-    parser.add_argument('--filename_1_result', type=str, default="tests/result-1.npy", help='sign_loc_info')
-    parser.add_argument('--filename_1_result_2', type=str, default="tests/result-1-2.npy", help='dist_matrix_ns')
-    parser.add_argument('--filename_2_result', type=str, default="tests/result-2.npy", help='result of step 2')
-    parser.add_argument('--filename_3_result', type=str, default="tests/result-3.npy", help='dirs')
-    parser.add_argument('--filename_3_result_2', type=str, default="tests/result-3-2.npy", help='network_nodes')
+    parser.add_argument('--filename_1', type=str, default="tests/first-phase.lp")
+    parser.add_argument('--filename_2', type=str, default="tests/second-phase.lp")
+    parser.add_argument('--filename_3', type=str, default="tests/dijstra-cal.lp")
+    parser.add_argument('--filename_1_result', type=str, default="tests/install_loc.npy", help='sign_loc_info')
+    parser.add_argument('--filename_1_result_2', type=str, default="tests/dist_matrix_ns.npy", help='dist_matrix_ns')
+    parser.add_argument('--filename_2_result', type=str, default="tests/activate-cond.npy", help='result of step 2')
+    parser.add_argument('--filename_3_result', type=str, default="tests/opti-dirs-for-net-node.npy", help='dirs')
+    parser.add_argument('--filename_3_result_2', type=str, default="tests/net-nodes.npy", help='network_nodes')
     args = parser.parse_args()
-
-    # # For parameter calibration
-    # po_graph = initialize(args)
-    # po_graph.printGraph(field_show=True, enviro_show=True)
 
     # The optimization process is divided into two steps:
 
-    # First step: (1) generate the possible locations of signage (2): generate the exiting_dir
-    po_graph = initialize(args)
-    po_graph.printGraph(field_show=True, enviro_show=True)
+    # # First step: (1) generate the possible locations of signage (2): generate the exiting_dir
+    # po_graph = initialize(args)
+    # po_graph.printGraph(field_show=True, enviro_show=True)
     # # 1)
     # write_lp_1(po_graph, args)
     # optimize_lp_1(po_graph, args)
-    # po_graph.printGraph(field_show=True, enviro_show=True)
+    # po_graph.printGraph(field_show=False, enviro_show=True)
     # # 2)
     # po_graph.read_net(args)
     # dijkstra = DIJKSTRA(po_graph, args)
-    # po_graph.printOpti(enviro_show=False, dijkstra=dijkstra)
-    # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=False, dijkstra_path_only=False)
-    # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=dijkstra, dijkstra_path_only=False)
+    # # po_graph.printOpti(enviro_show=False, dijkstra=dijkstra)
+    # # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=False, dijkstra_path_only=False)
+    # # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=dijkstra, dijkstra_path_only=False)    #
 
     # # Second step: activate the necessary signage
     # po_graph = initialize(args)
@@ -134,13 +130,13 @@ def initialize(args):
                 (19, 35.3, 6, 1.3, 16),
                 ]
 
-    # need more information extracted from trajectory
+    # # need more information extracted from trajectory
     ped_info = [(0, 7.5, 8.5, 0, 1),
                 (1, 3.5, 5.5, 0, 1),
                 (2, 15.5, 5.5, 1, 0),
                 (3, 15.5, 12.4, -1, 0),
                 (4, 3.5, 3.5, -1, 0)]
-    # ped_info = []
+    ped_info = []
     # casual distribution of pedestrian no intersection with obstacles and in the range
     # num_ped =
     # for n in range(num_ped):
@@ -202,6 +198,55 @@ def write_lp_1(po_graph, args):
     m.write(filename=args.filename_1)
 
 
+def write_lp_1_1(po_graph, args):
+    """
+    generate the locations of the signage settlements (activated and inactivated)
+    with the consideration of evacuees' cognitive range and obstacle information
+    return: the .lp file
+    # considering pre_hazard trial 1
+    """
+    m = Model("A")
+
+    # variables:
+    num_node = len(po_graph.nodes)
+    x_name = ['x{}'.format(sign) for sign in range(num_node)]  # if the sign is adopted as the potential signage 0/1
+    # b_name = ['b{}{}'.format(node, sign) for node in range(num_node) for sign in range(num_node)]
+    # 1/0 if the sign(s) can be detected by person at node [we require at least one sign can be detected]
+
+    variables = {}
+    for xi in x_name:
+        variables[xi] = m.addVar(vtype=GRB.BINARY, name=xi)
+    # for bi in b_name:
+    #     variables[bi] = m.addVar(vtype=GRB.BINARY, name=bi)
+    m.update()
+
+    # objective:
+    m.setObjective(sum((variables['x{}'.format(i)] for i in range(num_node))), GRB.MINIMIZE)
+
+    # constraints:
+    # construct the matrix to show the intersection condition between node and sign: dis_ns-ok inf-notok
+    dist_matrix_ns = generate_dist_matrix_ns(po_graph, args)
+    danger_info = po_graph.danger_info
+    num_danger = len(danger_info)
+    dist_matrix_nd = generate_dist_matrix_nd(po_graph, args)
+    for node in range(num_node):
+        # for sign in range(num_node):
+        # m.addConstr(
+        #     (args.per_dis - dist_matrix_ns[node, sign]) * (2 * variables['b{}{}'.format(node, sign)] - 1) >= 0,
+        #     'c_abs{}{}'.format(node, sign))
+        m.addConstr(sum(dist_matrix_ns[node, sign]
+                        * variables['x{}'.format(sign)] for sign in range(num_node)) >= 1, 'cons_signs{}'.format(node))
+
+        # adding new restrictions with the consideration of pre-hazard
+        m.addConstr(sum(dist_matrix_ns[node, sign]
+                        * variables['x{}'.format(sign)] for sign in range(num_node))
+                    >= sum(dist_matrix_nd[node, danger] for danger in range(num_danger)),
+                    'cons_signs_danger{}'.format(node))
+
+    # write in
+    m.write(filename=args.filename_1)
+
+
 def write_lp_2(po_graph, args):
     """
     generate the optimization model with po_graph and save it as 'file'
@@ -246,9 +291,20 @@ def write_lp_2(po_graph, args):
 
     # constraints
     exiting_i_dirs = find_the_fittest_dirs(po_graph)
+
+    # generate data-attribute
+    # data-attribute {node}:array(intention i),array(opti-direction i),intention_e,array(loc) 606*4
+    data_attri = {}
+
     for node in range(num_node):
         current_i_dir = np.array([po_graph.nodes[node].e_ix, po_graph.nodes[node].e_iy])
         exiting_i_dir = exiting_i_dirs[node]
+
+        # generate data-attribute
+        data_attri[node] = [current_i_dir,
+                            exiting_i_dir,
+                            po_graph.nodes[node].e,
+                            np.array([po_graph.nodes[node].x, po_graph.nodes[node].y])]
 
         for sign in influ_signs_for_n[node]:
             sign_activate = sum(variables['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right'])
@@ -269,6 +325,9 @@ def write_lp_2(po_graph, args):
             m.addConstr(
                 variables['u{}_{}'.format(node, sign)] >= get_utility(angle_matter_u, e_matter_u) * sign_activate,
                 'u_low_limit{}{}'.format(node, sign))
+
+    # generate data-attribute
+    np.save("tests/data-attri-for-cluster.npy", data_attri)
 
     for sign in poten_signs:
         sign_activate = sum(variables['s{}{}'.format(sign, j)] for j in ['up', 'down', 'left', 'right'])
