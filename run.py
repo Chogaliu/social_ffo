@@ -14,6 +14,7 @@ from gurobipy import *
 from helper import *
 from tqdm import tqdm
 from dijkstra import DIJKSTRA
+import clustering_analysis as ca
 
 
 def main():
@@ -46,26 +47,32 @@ def main():
 
     # The optimization process is divided into two steps:
 
-    # # First step: (1) generate the possible locations of signage (2): generate the exiting_dir
+    # # First step: (1) generate the possible locations of signage and save
     # po_graph = initialize(args)
-    # po_graph.printGraph(field_show=True, enviro_show=True)
-    # # 1)
-    # write_lp_1(po_graph, args)
-    # optimize_lp_1(po_graph, args)
+    # # po_graph.printGraph(field_show=True, enviro_show=True)
+    #
+    # # write_lp_1(po_graph, args)
+    # # optimize_lp_1(po_graph, args)
+    #
+    # loc_num = solve_1_2(po_graph, args)
+    # print(loc_num)
+    #
     # po_graph.printGraph(field_show=False, enviro_show=True)
-    # # 2)
+
+    # # First step: (2): generate the exiting_dir and save
+    # po_graph = initialize(args)
     # po_graph.read_net(args)
     # dijkstra = DIJKSTRA(po_graph, args)
-    # # po_graph.printOpti(enviro_show=False, dijkstra=dijkstra)
-    # # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=False, dijkstra_path_only=False)
-    # # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=dijkstra, dijkstra_path_only=False)    #
+    # po_graph.printOpti(enviro_show=False, dijkstra=dijkstra)
+    # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=False, dijkstra_path_only=False)
+    # po_graph.printNetwork(net_show=True, enviro_show=False, dijkstra=dijkstra, dijkstra_path_only=False)    #
 
-    # # Second step: activate the necessary signage
-    # po_graph = initialize(args)
-    # po_graph.read_pre_results(args)
-    # write_lp_2(po_graph, args)
-    # optimize_lp_2(po_graph, args)
-    # po_graph.printGraph(field_show=True, enviro_show=True)
+    # Second step: activate the necessary signage
+    po_graph = initialize(args)
+    po_graph.read_pre_results(args)
+    write_lp_2(po_graph, args)
+    optimize_lp_2(po_graph, args)
+    po_graph.printGraph(field_show=True, enviro_show=True)
 
     # # update the e on the po_graph
     # po_graph.read_SigntoField(args.k, args.sign_q)
@@ -247,6 +254,42 @@ def write_lp_1_1(po_graph, args):
     m.write(filename=args.filename_1)
 
 
+def solve_1_2(po_graph, args):
+    """
+    generate the locations of the signage settlements (activated and inactivated)
+    with the consideration of evacuees' cognitive range and obstacle information
+    return: sign_loc_info (settlement of possible signage locations)
+    sign_loc_info x{}=0/1:
+    # considering pre_hazard trial 2
+    # no need to generate .lp file
+    """
+    dataset = ca.createDataSet()
+    num = 2
+    sign_loc_info = {}
+    centroids, cluster, minDist, minDistIndices = ca.kmeans(dataset, num)
+    while minDist.max() > args.per_dis:
+        num += 1
+        centroids, cluster, minDist, minDistIndices = ca.kmeans(dataset, num)
+
+    dist = 1E+2 * np.ones([num, 1])
+    loc_sign = np.zeros([num, 1])
+    for i in range(len(minDistIndices)):
+        idx = minDistIndices[i]
+        if minDist[i] < dist[idx]:
+            dist[idx] = minDist[i]
+            loc_sign[idx] = i
+
+    for j in range(len(po_graph.nodes)):
+        if j in loc_sign:
+            sign_loc_info[j] = 1
+        else:
+            sign_loc_info[j] = 0
+
+    po_graph.sign_loc_info = sign_loc_info
+    np.save(args.filename_1_result, sign_loc_info)
+    return num
+
+
 def write_lp_2(po_graph, args):
     """
     generate the optimization model with po_graph and save it as 'file'
@@ -293,7 +336,7 @@ def write_lp_2(po_graph, args):
     exiting_i_dirs = find_the_fittest_dirs(po_graph)
 
     # generate data-attribute
-    # data-attribute {node}:array(intention i),array(opti-direction i),intention_e,array(loc) 606*4
+    # data-attribute {node}: array(intention i),array(opti-direction i),intention_e,array(loc) 606*4
     data_attri = {}
 
     for node in range(num_node):
