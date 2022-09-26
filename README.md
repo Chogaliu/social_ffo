@@ -1,5 +1,5 @@
 # social_ffo
-optimization of dynamic evacuation signage system (Suspended in 2022.5)
+optimization of dynamic evacuation signage system (Suspended in 2022.4)
 
 
 Still need polish:
